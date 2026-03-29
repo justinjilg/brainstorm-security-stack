@@ -28,30 +28,53 @@ Each agent lives in `agents/<name>/` with three files:
 - **STYLE.md** — Communication patterns, word choices, how they disagree/celebrate
 - **MEMORY.md** — What they've learned, decisions made, patterns noticed
 
-### Roster
+### Roster — Provisioned in BrainstormRouter
 
-| Agent | Role | Domain | Primary Model |
-|-------|------|--------|---------------|
-| Alex | Crypto Engineer | Cryptography, key management, TLS, post-quantum | Opus 4.6 |
-| Casey | API Security Lead | API security, authentication, authorization | Sonnet 4.6 |
-| Sam | Compliance Officer | SOC2, HIPAA, evidence ledger, audit trails | Opus 4.6 |
-| Morgan | DevOps Engineer | CI/CD, infrastructure, deployment, monitoring | Sonnet 4.6 |
-| River | Risk Analyst | Threat modeling, risk scoring, vulnerability assessment | Gemini 3.1 Pro |
-| Jordan | Auth Architect | Identity, OAuth, RBAC/ABAC, session management | Opus 4.6 |
-| Taylor | QA Engineer | Testing, fuzzing, chaos engineering, coverage | Sonnet 4.6 |
-| Sage | Product Manager | PRDs, user stories, sprint planning, prioritization | GPT-5.4 |
-| Quinn | Architect | System design, ADRs, component boundaries, data flow | Opus 4.6 |
-| Avery | Frontend Engineer | Dashboard UI, alerts, visualizations | Sonnet 4.6 |
+All agents are registered in BR production with real budgets and enforcement.
+Provisioned: 2026-03-29. Script: `brainstormrouter/scripts/provision-living-case-study.ts`
 
-## Routing & Cost Tracking
+| Agent | BR agent_id | Role | Daily Budget | Monthly Budget | Cost Center | Primary Model |
+|-------|-------------|------|-------------|----------------|-------------|---------------|
+| Alex | `alex-crypto` | Crypto Engineer | $3.00 | $60.00 | security-eng | Opus 4.6 |
+| Casey | `casey-apisec` | API Security Lead | $4.00 | $80.00 | security-eng | Sonnet 4.6 |
+| Sam | `sam-compliance` | Compliance Officer | $2.00 | $40.00 | compliance | Opus 4.6 |
+| Morgan | `morgan-devops` | DevOps Engineer | $3.00 | $60.00 | platform | Sonnet 4.6 |
+| River | `river-risk` | Risk Analyst | $2.50 | $50.00 | security-eng | Gemini 3.1 Pro |
+| Jordan | `jordan-auth` | Auth Architect | $3.50 | $70.00 | security-eng | Opus 4.6 |
+| Taylor | `taylor-qa` | QA Engineer | $3.00 | $60.00 | quality | Sonnet 4.6 |
+| Sage | `sage-pm` | Product Manager | $2.00 | $40.00 | product | GPT-5.4 |
+| Quinn | `quinn-architect` | Architect | $5.00 | $100.00 | architecture | Opus 4.6 |
+| Avery | `avery-frontend` | Frontend Engineer | $3.00 | $60.00 | frontend | Sonnet 4.6 |
 
-Every LLM call routes through BrainstormRouter (`api.brainstormrouter.com/v1`). Agents see and comment on their routing:
+**Total: $31.00/day, $620.00/month. Enforcement: hard.**
 
-- "BR routed me to Gemini today — I'm over 80% of my daily token budget"
-- "Thompson sampling is sending my code reviews to Sonnet instead of Opus — it learned Sonnet is better for Go review"
-- "Almost out of tokens. Saving my remaining budget for the security review Casey asked for."
+Quinn has `can_delegate: true` — can spawn sub-agents with sliced budgets.
 
-Cost data is tracked per agent, per feature, per sprint in `progress/costs.json`.
+## BrainstormRouter Integration
+
+**API:** `https://api.brainstormrouter.com/v1`
+**Auth:** Admin API key stored in 1Password (`BR Living Case Study Key`) or `.env.case-study`
+**Providers:** Anthropic, OpenAI, Google (all registered and active)
+
+### How agents make calls
+
+1. Bootstrap agent to get JWT: `POST /v1/agent/bootstrap` with admin key + `{"agent_id": "quinn-architect"}`
+2. Use JWT for completions: `POST /v1/chat/completions` with `Authorization: Bearer <jwt>`
+3. Every call returns BR headers — agents reference these in check-ins:
+   - `x-br-actual-cost` — what this call cost
+   - `x-br-budget-remaining` — how much budget is left
+   - `x-br-route-reason` — why this model was chosen
+   - `x-br-quality-score` — quality assessment
+   - `x-br-reputation-tier` — agent's reputation (gold, silver, etc.)
+   - `x-br-agent-cost-center` — cost attribution
+   - `x-br-audit-hash` — evidence chain hash
+
+### Agent budget awareness
+
+Agents can check their own status: `GET /v1/agent/status` (with JWT auth)
+Returns: profile, budget limits, spend, remaining, anomaly events, governance state.
+
+Cost data tracked per agent, per feature, per sprint in `progress/costs.json`.
 
 ## What We're Building
 
