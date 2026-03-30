@@ -3,11 +3,14 @@
   "title": "Policy Evaluation Engine",
   "description": "Evaluate discovered assets against YAML-defined security rules. Map findings to CIS/SOC2/HIPAA controls. Deduplicate via pgvector embeddings.",
   "implementAgent": "quinn-architect",
-  "currentPhase": "design",
+  "currentPhase": "implement",
   "status": "active",
   "artifacts": {
     "spec": [
       "docs/specs/policy-engine.md"
+    ],
+    "design": [
+      "docs/design/policy-engine.md"
     ]
   },
   "reviewResults": [],
