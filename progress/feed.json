@@ -602,6 +602,54 @@
       "route_reason": "thompson-sampling",
       "quality_score": "0.77",
       "latency_ms": 23112
+    },
+    {
+      "timestamp": "2026-03-30T16:40:06.396Z",
+      "agent": "jordan-auth",
+      "feature": "auth-handler",
+      "phase": "implement",
+      "status": "build-failed",
+      "summary": "Implemented: src/auth/handler.go (293 lines)",
+      "artifact": "src/auth/handler.go",
+      "format": "raw-code",
+      "build_status": "fail",
+      "cost": "$0.0885",
+      "model": "gpt-4.1-2025-04-14",
+      "route_reason": "explicit",
+      "quality_score": "0.74",
+      "latency_ms": 27471
+    },
+    {
+      "timestamp": "2026-03-30T16:40:08.714Z",
+      "agent": "jordan-auth",
+      "feature": "auth-handler",
+      "phase": "implement",
+      "status": "build-failed",
+      "summary": "Implemented: src/auth/claims.go (293 lines)",
+      "artifact": "src/auth/claims.go",
+      "format": "raw-code",
+      "build_status": "fail",
+      "cost": "$0.0000",
+      "model": "gpt-4.1-2025-04-14",
+      "route_reason": "semantic-cache",
+      "quality_score": "0.72",
+      "latency_ms": 188
+    },
+    {
+      "timestamp": "2026-03-30T16:40:13.269Z",
+      "agent": "jordan-auth",
+      "feature": "auth-handler",
+      "phase": "implement",
+      "status": "build-failed",
+      "summary": "Implemented: src/auth/middleware.go (293 lines)",
+      "artifact": "src/auth/middleware.go",
+      "format": "raw-code",
+      "build_status": "fail",
+      "cost": "$0.0000",
+      "model": "gpt-4.1-2025-04-14",
+      "route_reason": "semantic-cache",
+      "quality_score": "0.72",
+      "latency_ms": 229
     }
   ]
 }
