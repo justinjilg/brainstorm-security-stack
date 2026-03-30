@@ -502,6 +502,21 @@
       "reputation_tier": "gold",
       "latency_ms": 111455,
       "budget_remaining": 49.96
+    },
+    {
+      "timestamp": "2026-03-30T12:06:54.207Z",
+      "agent": "sage-pm",
+      "phase": "Sprint Planning",
+      "status": "completed",
+      "summary": "Sprint 2 defined: 8 tasks. Moving from architecture to implementation.",
+      "artifact": "sprints/sprint-2.json",
+      "cost": "$0.0137",
+      "model": "gpt-4.1-2025-04-14",
+      "route_reason": "explicit",
+      "quality_score": "0.91",
+      "reputation_tier": "gold",
+      "latency_ms": 0,
+      "budget_remaining": null
     }
   ]
 }

@@ -2,141 +2,144 @@
   "sprint": 2,
   "title": "Implementation",
   "generated_by": "sage-pm",
-  "generated_at": "2026-03-30T00:54:45.978Z",
+  "generated_at": "2026-03-30T12:06:54.207Z",
   "model": "gpt-4.1-2025-04-14",
-  "cost": "$0.0122",
+  "cost": "$0.0137",
   "tasks": [
     {
-      "number": 11,
-      "title": "Implement AWS CSPM Resource Scanner (MVP)",
-      "agentId": "quinn-architect",
-      "outputPath": "src/scanner/providers/aws.go",
-      "contextPaths": [
-        "docs/prds/cspm-v1.md",
-        "docs/architecture/system-design-v1.md",
-        "docs/security/threat-model-v1.md"
-      ],
-      "respondsTo": [
-        "sage-pm",
-        "river-risk"
-      ],
-      "prompt": "Implement the initial AWS CSPM resource scanner in Go, following the system architecture and requirements from the PRD. Focus on discovering EC2 and S3 resources as an MVP. Ensure the code aligns with the threat model and architectural boundaries defined in ADR-001.",
-      "maxTokens": 4000
-    },
-    {
-      "number": 12,
-      "title": "Implement Authentication Handler (JWT-based)",
-      "agentId": "jordan-auth",
-      "outputPath": "src/auth/handler.go",
-      "contextPaths": [
-        "docs/architecture/auth-design-v1.md",
-        "docs/security/crypto-requirements-v1.md",
-        "docs/security/api-security-requirements-v1.md"
-      ],
-      "respondsTo": [
-        "alex-crypto",
-        "casey-apisec"
-      ],
-      "prompt": "Implement the authentication handler in Go, supporting JWT issuance and verification as specified in the authentication design and cryptographic requirements. Ensure input validation and error handling per API security requirements.",
-      "maxTokens": 4000
-    },
-    {
-      "number": 13,
-      "title": "Define Policy Engine Schema (JSON/YAML)",
-      "agentId": "quinn-architect",
-      "outputPath": "src/policy/schema.yaml",
-      "contextPaths": [
-        "docs/prds/cspm-v1.md",
-        "docs/architecture/system-design-v1.md"
-      ],
-      "respondsTo": [
-        "sage-pm"
-      ],
-      "prompt": "Design and document the schema for CSPM policy definitions (in JSON or YAML). The schema should support resource selectors, conditions, and remediation guidance, and be easily extensible for future cloud providers. Reference the PRD and system design.",
-      "maxTokens": 4000
-    },
-    {
-      "number": 14,
-      "title": "Security Review: Authentication Handler & AWS Scanner",
-      "agentId": "casey-apisec",
-      "outputPath": "docs/reviews/sprint-2-auth-api-security-review.md",
-      "contextPaths": [
-        "src/auth/handler.go",
-        "src/scanner/providers/aws.go",
-        "docs/security/api-security-requirements-v1.md",
-        "docs/security/threat-model-v1.md"
-      ],
-      "respondsTo": [
-        "jordan-auth",
-        "quinn-architect"
-      ],
-      "prompt": "Perform a security review of the new authentication handler and AWS scanner implementation. Evaluate adherence to API security requirements, input validation, and threat model coverage. Document findings and recommendations.",
-      "maxTokens": 6000
-    },
-    {
-      "number": 15,
-      "title": "Test Plan: AWS Scanner & Auth Handler",
-      "agentId": "taylor-qa",
-      "outputPath": "tests/plans/aws_scanner_auth_handler_test_plan.md",
-      "contextPaths": [
-        "src/scanner/providers/aws.go",
-        "src/auth/handler.go",
-        "docs/testing/test-strategy-v1.md"
-      ],
-      "respondsTo": [
-        "quinn-architect",
-        "jordan-auth"
-      ],
-      "prompt": "Draft a detailed test plan for the AWS scanner and authentication handler. Specify unit, integration, and edge case tests, referencing the overall test strategy. Highlight test coverage for error handling and security boundaries.",
-      "maxTokens": 4000
-    },
-    {
-      "number": 16,
-      "title": "Compliance Mapping: Authentication & AWS Scanner",
-      "agentId": "sam-compliance",
-      "outputPath": "docs/compliance/sprint-2-auth-scanner-evidence.md",
-      "contextPaths": [
-        "src/auth/handler.go",
-        "src/scanner/providers/aws.go",
-        "docs/compliance/requirements-matrix-v1.md"
-      ],
-      "respondsTo": [
-        "jordan-auth",
-        "quinn-architect"
-      ],
-      "prompt": "Review the authentication handler and AWS scanner implementations against the compliance requirements matrix (SOC2, HIPAA). Document evidence of controls, gaps, and recommendations for audit readiness.",
-      "maxTokens": 4000
-    },
-    {
       "number": 17,
-      "title": "Build Dashboard Widget: AWS Resource Inventory",
-      "agentId": "avery-frontend",
-      "outputPath": "frontend/components/AwsResourceInventory.tsx",
+      "title": "Implement GCP CSPM Resource Scanner (MVP)",
+      "agentId": "Quinn",
+      "outputPath": "src/scanner/providers/gcp.go",
       "contextPaths": [
+        "docs/architecture/system-design-v1.md",
         "src/scanner/providers/aws.go",
-        "docs/design/dashboard-ia-v1.md"
+        "docs/prds/cspm-v1.md"
       ],
       "respondsTo": [
-        "quinn-architect"
+        "Quinn",
+        "Sage"
       ],
-      "prompt": "Implement a Next.js dashboard widget to display discovered AWS resources (EC2, S3) as reported by the scanner. Follow the dashboard information architecture and wireframes. Include loading/error states and mock data for now.",
+      "prompt": "Implement the MVP version of the GCP CSPM Resource Scanner in Go, following the architectural patterns established in src/scanner/providers/aws.go. Ensure the design aligns with the system architecture in docs/architecture/system-design-v1.md and covers the resource types prioritized in the CSPM PRD. Include comments and TODOs for areas requiring further iteration.",
       "maxTokens": 4000
     },
     {
       "number": 18,
-      "title": "Update CI/CD Pipeline for AWS Scanner & Auth Handler",
-      "agentId": "morgan-devops",
-      "outputPath": "infra/cicd/aws_scanner_auth_handler_pipeline.yaml",
+      "title": "Implement Policy Engine Core Logic",
+      "agentId": "Quinn",
+      "outputPath": "src/policy/engine.go",
       "contextPaths": [
-        "src/scanner/providers/aws.go",
+        "docs/architecture/system-design-v1.md",
+        "src/policy/schema.yaml",
+        "docs/prds/cspm-v1.md"
+      ],
+      "respondsTo": [
+        "Quinn",
+        "Sage"
+      ],
+      "prompt": "Write the initial Go implementation of the Policy Engine core logic, using the schema defined in src/policy/schema.yaml and the system design in docs/architecture/system-design-v1.md. The engine should be able to parse policy definitions and evaluate them against resource data. Focus on modularity and extensibility for future cloud providers.",
+      "maxTokens": 4000
+    },
+    {
+      "number": 19,
+      "title": "Integrate JWT-based Auth with Policy Engine Endpoints",
+      "agentId": "Jordan",
+      "outputPath": "src/policy/handler.go",
+      "contextPaths": [
         "src/auth/handler.go",
+        "docs/architecture/auth-design-v1.md",
+        "src/policy/engine.go"
+      ],
+      "respondsTo": [
+        "Jordan",
+        "Quinn"
+      ],
+      "prompt": "Create a Go HTTP handler for the Policy Engine that integrates JWT-based authentication and authorization as implemented in src/auth/handler.go. Ensure endpoints enforce RBAC as described in docs/architecture/auth-design-v1.md. The handler should expose endpoints to evaluate policies and return results securely.",
+      "maxTokens": 4000
+    },
+    {
+      "number": 20,
+      "title": "Security Review: Policy Engine Core & Auth Integration",
+      "agentId": "Casey",
+      "outputPath": "docs/reviews/sprint-3-policy-engine-security-review.md",
+      "contextPaths": [
+        "src/policy/engine.go",
+        "src/policy/handler.go",
+        "docs/security/api-security-requirements-v1.md",
+        "docs/architecture/auth-design-v1.md"
+      ],
+      "respondsTo": [
+        "Quinn",
+        "Jordan"
+      ],
+      "prompt": "Perform a security review of the Policy Engine core logic and its HTTP handler with JWT-based authentication. Assess input validation, RBAC enforcement, and adherence to API security requirements. Identify risks, recommend mitigations, and summarize findings in a structured format.",
+      "maxTokens": 6000
+    },
+    {
+      "number": 21,
+      "title": "Test Plan: GCP Scanner & Policy Engine",
+      "agentId": "Taylor",
+      "outputPath": "tests/plans/gcp_scanner_policy_engine_test_plan.md",
+      "contextPaths": [
+        "src/scanner/providers/gcp.go",
+        "src/policy/engine.go",
+        "src/policy/handler.go",
+        "docs/testing/test-strategy-v1.md"
+      ],
+      "respondsTo": [
+        "Quinn",
+        "Jordan"
+      ],
+      "prompt": "Develop a comprehensive test plan for the new GCP CSPM Resource Scanner and the Policy Engine, including their integration points. Cover functional, edge case, and security scenarios, referencing the overall test strategy. Include test data requirements and outline manual vs. automated coverage.",
+      "maxTokens": 4000
+    },
+    {
+      "number": 22,
+      "title": "Compliance Mapping: GCP Scanner & Policy Engine",
+      "agentId": "Sam",
+      "outputPath": "docs/compliance/sprint-3-gcp-policy-evidence.md",
+      "contextPaths": [
+        "src/scanner/providers/gcp.go",
+        "src/policy/engine.go",
+        "docs/compliance/requirements-matrix-v1.md"
+      ],
+      "respondsTo": [
+        "Quinn"
+      ],
+      "prompt": "Map the GCP CSPM Scanner and Policy Engine core logic to the SOC2 and HIPAA requirements in the compliance matrix. Identify which controls are addressed, what evidence is generated, and note any compliance gaps. Provide recommendations for future iterations.",
+      "maxTokens": 4000
+    },
+    {
+      "number": 23,
+      "title": "Dashboard Widget: Policy Evaluation Results",
+      "agentId": "Avery",
+      "outputPath": "frontend/components/PolicyEvaluationResults.tsx",
+      "contextPaths": [
+        "src/policy/handler.go",
+        "docs/design/dashboard-ia-v1.md"
+      ],
+      "respondsTo": [
+        "Jordan",
+        "Avery"
+      ],
+      "prompt": "Design and implement a React component for the dashboard that displays policy evaluation results returned by the Policy Engine handler. Follow the dashboard information architecture and wireframes. Ensure the component supports different result states (pass, fail, error) and is accessible.",
+      "maxTokens": 4000
+    },
+    {
+      "number": 24,
+      "title": "Update CI/CD Pipeline for GCP Scanner & Policy Engine",
+      "agentId": "Morgan",
+      "outputPath": "infra/cicd/gcp_scanner_policy_engine_pipeline.yaml",
+      "contextPaths": [
+        "src/scanner/providers/gcp.go",
+        "src/policy/engine.go",
         "docs/architecture/cicd-pipeline-v1.md"
       ],
       "respondsTo": [
-        "quinn-architect",
-        "jordan-auth"
+        "Quinn",
+        "Morgan"
       ],
-      "prompt": "Update the CI/CD pipeline configuration to build, test, and lint the new AWS scanner and authentication handler components. Ensure pipeline steps align with the CI/CD pipeline design and enable fast feedback for these modules.",
+      "prompt": "Extend the CI/CD pipeline to build, test, and deploy the GCP CSPM Scanner and Policy Engine components. Ensure the pipeline includes static analysis, unit tests, and artifact publishing as described in the pipeline design document.",
       "maxTokens": 4000
     }
   ]
