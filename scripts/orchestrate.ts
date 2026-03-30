@@ -263,11 +263,12 @@ async function runImplement(feature: Feature): Promise<string[]> {
     // Read go.mod to tell the LLM exactly which external packages are available
     const goModPath = join(ROOT, "go.mod");
     const goModContent = existsSync(goModPath) ? readFileSync(goModPath, "utf-8") : "";
-    const goModNote = goModContent ? `\n\n## AVAILABLE EXTERNAL PACKAGES (from go.mod)\nOnly use packages from this list or the Go standard library. Do NOT invent fake packages.\n\`\`\`\n${goModContent}\`\`\`` : "";
+    const moduleName = goModContent.match(/^module\s+(\S+)/m)?.[1] ?? "unknown";
+    const goModNote = goModContent ? `\n\n## AVAILABLE PACKAGES — STRICT\nModule: ${moduleName}\nOnly use:\n1. Go standard library packages\n2. External packages EXACTLY as listed in go.mod below\nDO NOT import:\n- example.com/... (does not exist)\n- yourmodule/... (does not exist)\n- Any package not listed below\n\nIf the design calls for abstractions/interfaces from other packages, DEFINE THEM INLINE in this file instead of importing them.\n\ngo.mod:\n\`\`\`\n${goModContent}\`\`\`` : "";
 
     const result = await callBR(jwt, agent.model,
-      loadSoul(agent) + `\n\n## CRITICAL: RAW CODE ONLY\nOutput ONLY the raw Go file. No markdown. No fences. No explanation.\nFirst line: package ${pkgName}\nThe code MUST pass go vet. Include all imports.\nDo NOT import packages that are not in the Go standard library or the go.mod file below.${goModNote}`,
-      `Implement ${outPath} for feature: ${feature.title}\n\nSpec:\n${spec.slice(0, 2000)}\n\nDesign:\n${design.slice(0, 3000)}\n\nWrite the complete Go file. Package name: ${pkgName}. This file will be verified with go vet immediately after you write it. Only import stdlib or packages listed in the go.mod above.`,
+      loadSoul(agent) + `\n\n## CRITICAL: RAW CODE ONLY\nOutput ONLY the raw Go file. No markdown. No fences. No explanation.\nFirst line: package ${pkgName}\nThe code MUST compile with go vet. Include all imports.\n\n## CRITICAL: NO PHANTOM IMPORTS\nDEFINE ALL INTERFACES AND TYPES INLINE IN THIS FILE.\nDo NOT import packages like example.com/*, yourmodule/*, or any invented package name.\nOnly stdlib + packages from go.mod.${goModNote}`,
+      `Implement ${outPath} for feature: ${feature.title}\n\nSpec:\n${spec.slice(0, 2000)}\n\nDesign:\n${design.slice(0, 3000)}\n\nWrite the complete Go file. Package name: ${pkgName}.\nIMPORTANT: Define all interfaces and types inline in this file — do NOT import from made-up packages like example.com or yourmodule.\nOnly import stdlib or packages from go.mod. This file will be immediately compiled with go vet.`,
       4000);
 
     writeOutput(outPath, result.text, true);
@@ -290,8 +291,8 @@ async function runImplement(feature: Feature): Promise<string[]> {
           console.log(`  Requesting fix...`);
           const currentCode = readFileSync(join(ROOT, outPath), "utf-8");
           const fixResult = await callBR(jwt, agent.model,
-            `Fix this Go code. Output ONLY the corrected file — raw Go, no markdown. First line: package ${pkgName}`,
-            `Build error:\n${build.error}\n\nCurrent file (${outPath}):\n${currentCode}\n\nFix all errors. Output the complete corrected file.`,
+            `Fix this Go code. Output ONLY the corrected file — raw Go, no markdown. First line: package ${pkgName}\nCRITICAL: Do NOT import from example.com/*, yourmodule/*, or any non-existent package. Only stdlib + go.mod packages. Define all interfaces inline.${goModNote}`,
+            `Build error:\n${build.error}\n\nCurrent file (${outPath}):\n${currentCode}\n\nFix ALL errors. IMPORTANT: If the error is about a missing package like example.com/* or yourmodule/*, DO NOT try to import it — instead REMOVE that import and define the interface/type directly in this file. Output the complete corrected file.`,
             4000);
           writeOutput(outPath, fixResult.text, true);
           result.cost += fixResult.cost;
