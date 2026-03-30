@@ -1108,6 +1108,36 @@
       "route_reason": "explicit",
       "quality_score": "0.84",
       "latency_ms": 18445
+    },
+    {
+      "timestamp": "2026-03-30T20:38:26.311Z",
+      "agent": "morgan-devops",
+      "feature": "aws-scanner",
+      "phase": "integrate",
+      "status": "completed",
+      "summary": "Integration: infra/ci/aws-scanner.yaml",
+      "artifact": "infra/ci/aws-scanner.yaml",
+      "format": "yaml",
+      "cost": "$0.0037",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "thompson-sampling",
+      "quality_score": "0.84",
+      "latency_ms": 3609
+    },
+    {
+      "timestamp": "2026-03-30T20:38:31.497Z",
+      "agent": "avery-frontend",
+      "feature": "aws-scanner",
+      "phase": "integrate",
+      "status": "completed",
+      "summary": "Integration: frontend/components/AwsScanner.tsx",
+      "artifact": "frontend/components/AwsScanner.tsx",
+      "format": "raw-code",
+      "cost": "$0.0072",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "thompson-sampling",
+      "quality_score": "0.86",
+      "latency_ms": 4708
     }
   ]
 }
