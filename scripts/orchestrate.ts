@@ -264,11 +264,16 @@ async function runImplement(feature: Feature): Promise<string[]> {
     const goModPath = join(ROOT, "go.mod");
     const goModContent = existsSync(goModPath) ? readFileSync(goModPath, "utf-8") : "";
     const moduleName = goModContent.match(/^module\s+(\S+)/m)?.[1] ?? "unknown";
-    const goModNote = goModContent ? `\n\n## AVAILABLE PACKAGES — STRICT\nModule: ${moduleName}\nOnly use:\n1. Go standard library packages\n2. External packages EXACTLY as listed in go.mod below\nDO NOT import:\n- example.com/... (does not exist)\n- yourmodule/... (does not exist)\n- Any package not listed below\n\nIf the design calls for abstractions/interfaces from other packages, DEFINE THEM INLINE in this file instead of importing them.\n\ngo.mod:\n\`\`\`\n${goModContent}\`\`\`` : "";
+    const goModNote = goModContent ? `\n\ngo.mod:\n\`\`\`\n${goModContent}\`\`\`` : "";
+
+    // Include prior review findings so the LLM fixes known issues on re-implementation
+    const priorReviewFindings = feature.reviewResults.length > 0
+      ? `\n\n## PRIOR REVIEW FINDINGS — FIX ALL OF THESE\nThe previous implementation was rejected. You MUST fix these critical findings:\n${feature.reviewResults.map(r => `### ${r.reviewer} (${r.verdict.toUpperCase()})\n${r.findings.slice(0, 8).map((f, i) => `${i + 1}. ${f}`).join("\n")}`).join("\n\n")}`
+      : "";
 
     const result = await callBR(jwt, agent.model,
-      loadSoul(agent) + `\n\n## CRITICAL: RAW CODE ONLY\nOutput ONLY the raw Go file. No markdown. No fences. No explanation.\nFirst line: package ${pkgName}\nThe code MUST compile with go vet. Include all imports.\n\n## CRITICAL: NO PHANTOM IMPORTS\nDEFINE ALL INTERFACES AND TYPES INLINE IN THIS FILE.\nDo NOT import packages like example.com/*, yourmodule/*, or any invented package name.\nOnly stdlib + packages from go.mod.${goModNote}`,
-      `Implement ${outPath} for feature: ${feature.title}\n\nSpec:\n${spec.slice(0, 2000)}\n\nDesign:\n${design.slice(0, 3000)}\n\nWrite the complete Go file. Package name: ${pkgName}.\nIMPORTANT: Define all interfaces and types inline in this file — do NOT import from made-up packages like example.com or yourmodule.\nOnly import stdlib or packages from go.mod. This file will be immediately compiled with go vet.`,
+      loadSoul(agent) + `\n\n## CRITICAL: RAW CODE ONLY\nOutput ONLY the raw Go file. No markdown. No fences. No explanation.\nFirst line: package ${pkgName}\nThe code MUST compile with go vet. Include all imports.${goModNote}`,
+      `Implement ${outPath} for feature: ${feature.title}\n\nSpec:\n${spec.slice(0, 1500)}\n\nDesign:\n${design.slice(0, 2000)}${priorReviewFindings}\n\nWrite the complete Go file. Package name: ${pkgName}. This file will be immediately compiled with go vet.`,
       4000);
 
     writeOutput(outPath, result.text, true);
