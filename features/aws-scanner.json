@@ -3,7 +3,7 @@
   "title": "AWS Resource Scanner",
   "description": "Enumerate AWS resources (EC2, S3, IAM, RDS, Lambda) using read-only credentials. Normalize into common Asset structs. Concurrent scanning with worker pool.",
   "implementAgent": "quinn-architect",
-  "currentPhase": "compliance",
+  "currentPhase": "integrate",
   "status": "active",
   "artifacts": {
     "spec": [
@@ -21,6 +21,9 @@
     ],
     "test": [
       "src/scanner/providers/aws_test.go"
+    ],
+    "compliance": [
+      "docs/compliance/aws-scanner-evidence.md"
     ]
   },
   "reviewResults": [
