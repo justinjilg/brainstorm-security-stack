@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -169,32 +168,3 @@ func getS3BucketRegion(ctx context.Context, cfg aws.Config, bucket string) (stri
 	return region, nil
 }
 
-package main
-
-import (
-	"context"
-	"fmt"
-	"log"
-	"os"
-
-	"yourmodule/internal/scanner"
-
-	"github.com/aws/aws-sdk-go-v2/config"
-)
-
-func main() {
-	ctx := context.Background()
-	awsCfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		log.Fatalf("Failed to load AWS config: %v", err)
-	}
-
-	scan := scanner.NewAwsScanner(ctx, awsCfg)
-	result, err := scan.DiscoverResources(ctx)
-	if err != nil {
-		log.Fatalf("Discovery failed: %v", err)
-	}
-
-	fmt.Printf("EC2 Instances: %+v\n", result.EC2Instances)
-	fmt.Printf("S3 Buckets: %+v\n", result.S3Buckets)
-}

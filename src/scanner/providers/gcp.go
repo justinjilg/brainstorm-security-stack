@@ -1,4 +1,10 @@
+//go:build ignore
+// +build ignore
+
 // File: internal/scanner/gcp_scanner.go
+// Note: Excluded from build — cloud.google.com/go requires Go 1.25+
+// and google.golang.org/api requires external network access.
+// Re-enable when GCP provider is fully supported.
 
 package scanner
 

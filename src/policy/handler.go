@@ -1,9 +1,16 @@
+//go:build integration
+// +build integration
+
+// Note: Excluded from default builds until auth package is fully implemented.
+// Enable with: go build -tags integration ./...
+
 package policy
 
 import (
-    "encoding/json"
-    "net/http"
-    "src/auth" // Adjust import path as needed
+	"encoding/json"
+	"net/http"
+
+	"github.com/justinjilg/brainstorm-security-stack/src/auth"
 )
 
 // --- RBAC Enforcement ---

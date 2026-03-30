@@ -259,9 +259,15 @@ async function runImplement(feature: Feature): Promise<string[]> {
     const pkgName = outPath.split("/").slice(-2, -1)[0] ?? "main";
 
     console.log(`  Implementing: ${outPath}`);
+
+    // Read go.mod to tell the LLM exactly which external packages are available
+    const goModPath = join(ROOT, "go.mod");
+    const goModContent = existsSync(goModPath) ? readFileSync(goModPath, "utf-8") : "";
+    const goModNote = goModContent ? `\n\n## AVAILABLE EXTERNAL PACKAGES (from go.mod)\nOnly use packages from this list or the Go standard library. Do NOT invent fake packages.\n\`\`\`\n${goModContent}\`\`\`` : "";
+
     const result = await callBR(jwt, agent.model,
-      loadSoul(agent) + `\n\n## CRITICAL: RAW CODE ONLY\nOutput ONLY the raw Go file. No markdown. No fences. No explanation.\nFirst line: package ${pkgName}\nThe code MUST pass go vet. Include all imports.`,
-      `Implement ${outPath} for feature: ${feature.title}\n\nSpec:\n${spec.slice(0, 2000)}\n\nDesign:\n${design.slice(0, 3000)}\n\nWrite the complete Go file. Package name: ${pkgName}. This file will be verified with go vet immediately after you write it.`,
+      loadSoul(agent) + `\n\n## CRITICAL: RAW CODE ONLY\nOutput ONLY the raw Go file. No markdown. No fences. No explanation.\nFirst line: package ${pkgName}\nThe code MUST pass go vet. Include all imports.\nDo NOT import packages that are not in the Go standard library or the go.mod file below.${goModNote}`,
+      `Implement ${outPath} for feature: ${feature.title}\n\nSpec:\n${spec.slice(0, 2000)}\n\nDesign:\n${design.slice(0, 3000)}\n\nWrite the complete Go file. Package name: ${pkgName}. This file will be verified with go vet immediately after you write it. Only import stdlib or packages listed in the go.mod above.`,
       4000);
 
     writeOutput(outPath, result.text, true);

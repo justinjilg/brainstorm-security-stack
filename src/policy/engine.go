@@ -315,13 +315,3 @@ func getResourceID(resource Resource) string {
     return ""
 }
 
-policies, err := policy.LoadPolicies("testdata/aws-s3-public-bucket.yaml")
-engine := policy.NewPolicyEngine(policies)
-resource := policy.Resource{
-    "account_type": "aws",
-    "resource_type": "s3_bucket",
-    "arn": "arn:aws:s3:::my-bucket",
-    "public_read": true,
-    "public_write": false,
-}
-findings, err := engine.EvaluateResource(resource)
