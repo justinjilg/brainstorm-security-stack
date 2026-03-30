@@ -317,6 +317,26 @@
       "reputation_tier": "gold",
       "latency_ms": 298759,
       "budget_remaining": 50
+    },
+    {
+      "timestamp": "2026-03-30T00:54:21.708Z",
+      "agent": "avery-frontend",
+      "phase": "Sprint 1 / Task 10",
+      "status": "completed",
+      "summary": "Completed: Dashboard wireframes (information architecture). Output: docs/design/dashboard-ia-v1.md",
+      "responds_to": [
+        "sage-pm",
+        "quinn-architect",
+        "river-risk"
+      ],
+      "artifact": "docs/design/dashboard-ia-v1.md",
+      "cost": "$0.0316",
+      "model": "gpt-4.1-2025-04-14",
+      "route_reason": "explicit",
+      "quality_score": "0.88",
+      "reputation_tier": "gold",
+      "latency_ms": 122662,
+      "budget_remaining": 50
     }
   ]
 }
