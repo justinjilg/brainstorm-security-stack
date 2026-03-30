@@ -1079,6 +1079,21 @@
           "verdict": "fail"
         }
       ]
+    },
+    {
+      "timestamp": "2026-03-30T20:32:22.635Z",
+      "agent": "taylor-qa",
+      "feature": "aws-scanner",
+      "phase": "test",
+      "status": "completed",
+      "summary": "Tests written: src/scanner/providers/aws_test.go",
+      "artifact": "src/scanner/providers/aws_test.go",
+      "format": "raw-code",
+      "cost": "$0.0150",
+      "model": "gemini-2.5-flash",
+      "route_reason": "explicit",
+      "quality_score": "0.73",
+      "latency_ms": 18950
     }
   ]
 }
