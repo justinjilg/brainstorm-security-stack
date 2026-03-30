@@ -1,16 +1,7 @@
 package auth
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"sync"
-	"testing"
-	"time"
 )
 
 // --- Mocks for Interfaces ---
@@ -51,4 +42,7 @@ func (m *MockTokenService) VerifyRefreshToken(token string, tenantID string) (*C
 
 func (m *MockTokenService) RotateRefreshToken(refreshToken string, tenantID string) (newRefreshToken string, err error) {
 	if m.RotateRefreshTokenFunc != nil {
-		return m.RotateRefreshToken
+		return m.RotateRefreshTokenFunc(refreshToken, tenantID)
+	}
+	return "new_refresh_token", nil
+}

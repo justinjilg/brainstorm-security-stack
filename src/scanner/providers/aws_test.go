@@ -2,20 +2,10 @@ package providers
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"reflect"
-	"sort"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-) 
+)
 
 func TestExampleFunction(t *testing.T) {
 	// Example test implementation
