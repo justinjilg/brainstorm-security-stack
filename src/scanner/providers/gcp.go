@@ -1,20 +1,3 @@
-<!-- Agent: quinn-architect | Model: gpt-4.1-2025-04-14 | Cost: $0.0281 | Latency: 208247ms -->
-<!-- Route: explicit | Quality: 0.88 | Reputation: gold -->
-<!-- Budget remaining: $49.92 -->
-Absolutely. Here’s how I’ll approach this:
-
-- **Scope:** Implement the GCP resource discovery component (“Scanner Engine” in ADR-001), focused on enumerating Compute Engine instances and Cloud Storage buckets (per PRD: GCP core resource MVP).
-- **Boundaries:** This is a Go module/package, not a standalone service. It exposes a Go interface, returns resource structs, and does not persist data.
-- **Security:** Uses provided credentials (service account key or ADC), handles errors defensively, never logs secrets.
-- **Extensibility:** Structure mirrors AWS scanner for easy addition of more GCP resources (IAM, Cloud SQL, etc.).
-- **Multi-tenancy:** Operates per credential set; tenancy orchestration is handled upstream.
-- **Testing:** Designed for testability (not shown here).
-
----
-
-# Go Implementation: GCP Resource Scanner MVP
-
-```go
 // File: internal/scanner/gcp_scanner.go
 
 package scanner
@@ -206,13 +189,7 @@ func discoverAllStorageBuckets(ctx context.Context, projectID string, opts ...op
 	}
 	return buckets, nil
 }
-```
 
----
-
-# Usage Example (Orchestration Layer)
-
-```go
 package main
 
 import (
@@ -243,24 +220,3 @@ func main() {
 	fmt.Printf("Compute Instances: %+v\n", result.ComputeInstances)
 	fmt.Printf("Storage Buckets: %+v\n", result.StorageBuckets)
 }
-```
-
----
-
-# Notes & TODOs
-
-- **Extensibility:** To add Cloud SQL, IAM, etc., add new helpers and extend `GcpDiscoveryResult`.
-- **Error Handling:** Defensive; skips failed zones/buckets, never panics.
-- **Security:** No secrets are logged or returned.
-- **Testing:** Use GCP client library stubs/mocks for unit tests (not shown).
-- **TODO:**  
-  - Add support for Cloud SQL, IAM, and other resources per PRD.
-  - Add context timeouts and better error aggregation/reporting.
-  - Consider parallelizing per-zone/region discovery for performance.
-  - Add tracing/logging hooks (without leaking sensitive info).
-  - Support ADC (Application Default Credentials) as well as explicit key files.
-  - Validate permissions up front and provide actionable errors if APIs are not enabled.
-
----
-
-This implementation aligns with the architectural patterns (modular monolith, stateless modules, clear interfaces) and PRD priorities. If you need Azure next or want to see compliance mapping stubs, let me know.

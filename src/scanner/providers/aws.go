@@ -1,20 +1,3 @@
-<!-- Agent: quinn-architect | Model: gpt-4.1-2025-04-14 | Cost: $0.0252 | Latency: 207822ms -->
-<!-- Route: explicit | Quality: 0.88 | Reputation: gold -->
-<!-- Budget remaining: $49.97 -->
-Absolutely. Here’s how I’ll approach this:
-
-- **Scope**: Implement the AWS resource discovery component (“Scanner Engine” in ADR-001) as a Go module/package, focusing on enumerating EC2 instances and S3 buckets.  
-- **Boundaries**: This code is a module within the modular monolith, not a standalone service. It exposes a Go interface for use by the orchestrating service layer.  
-- **Security**: All AWS API calls use provided credentials (ideally temporary/session tokens), and errors are handled defensively. No secrets are logged.  
-- **Extensibility**: The scanner is structured so adding Azure/GCP or other AWS resources is straightforward.  
-- **Multi-tenancy**: The scanner operates per-credential set (i.e., per tenant/account), but does not manage tenancy itself—that’s the responsibility of the orchestrator per ADR-001.  
-- **No persistence**: This module returns discovered resources as Go structs; persistence is handled elsewhere.
-
----
-
-# Go Implementation: AWS Resource Scanner MVP
-
-```go
 // File: internal/scanner/aws_scanner.go
 
 package scanner
@@ -185,13 +168,7 @@ func getS3BucketRegion(ctx context.Context, cfg aws.Config, bucket string) (stri
 	}
 	return region, nil
 }
-```
 
----
-
-# Usage Example (Orchestration Layer)
-
-```go
 package main
 
 import (
@@ -221,16 +198,3 @@ func main() {
 	fmt.Printf("EC2 Instances: %+v\n", result.EC2Instances)
 	fmt.Printf("S3 Buckets: %+v\n", result.S3Buckets)
 }
-```
-
----
-
-# Notes & Alignment
-
-- **Threat Model**: No secrets are logged, all errors are handled defensively, and the scanner only uses provided credentials (no privilege escalation).
-- **Architecture**: This is a module, not a service. It’s stateless and returns results to the orchestrator for storage, mapping, etc.
-- **Extensible**: Adding more resource types (RDS, Lambda, etc.) is a matter of adding methods, not refactoring the core.
-- **Multi-cloud**: The interface can be mirrored for Azure/GCP scanners.
-- **Testing**: For unit tests, use AWS SDK’s stubber/mocks (not shown here).
-
-If you want a test harness, error handling tweaks, or the start of a compliance mapping layer, let me know.

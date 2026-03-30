@@ -1,25 +1,3 @@
-<!-- Agent: jordan-auth | Model: gpt-4.1-2025-04-14 | Cost: $0.0375 | Latency: 240635ms -->
-<!-- Route: explicit | Quality: 0.76 | Reputation: gold -->
-<!-- Budget remaining: $49.97 -->
-Absolutely. Here’s a Go implementation of an authentication handler that issues and verifies JWTs according to the requirements in:
-
-- [docs/architecture/auth-design-v1.md](#) (Jordan: JWT structure, claims, rotation, RBAC)
-- [docs/security/crypto-requirements-v1.md](#) (Alex: ECDSA/Ed25519, key management, rotation)
-- [docs/security/api-security-requirements-v1.md](#) (Casey: input validation, error handling, audience check, no leakage)
-
-**Assumptions:**
-- JWTs are signed with ECDSA P-256 (ES256) or Ed25519, not HMAC.
-- Issuer is `BrainstormMSP`.
-- Audience must match (`cspm-scanner`).
-- Short-lived access tokens (15m), refresh tokens (8h).
-- Key material is loaded from a secure source (e.g., HSM or KMS), but for this example, we use in-memory keys.
-- Error responses are generic, never leak internals.
-- Input validation is strict.
-- No user registration or password logic here—this is for token issuance (on successful login) and verification middleware.
-
----
-
-```go
 package auth
 
 import (
@@ -262,26 +240,3 @@ func main() {
 	http.ListenAndServe(":8080", mux)
 }
 */
-
-```
-
----
-
-## Key Points
-
-- **JWT signing:** ECDSA P-256 (can swap for Ed25519 with a different library if desired).
-- **Claims:** All required fields (`tenant_id`, `sub_tenant_ids`, `roles`, etc.), plus standard claims.
-- **Audience/issuer enforced** on both issuance and verification.
-- **Input validation:** Strict, with clear error messages, never leaking internals.
-- **Error handling:** Per Casey’s requirements—generic, no stack traces or internal details.
-- **Extensible:** Add RBAC/permission checks downstream using claims from context.
-- **No secrets in logs:** No sensitive data is logged or returned in errors.
-
----
-
-**To productionize:**  
-- Replace in-memory key generation with HSM/KMS integration.
-- Implement refresh token rotation, revocation checks (e.g., Redis-backed blacklist).
-- Add rate limiting, audit logging, and secure key distribution as per full requirements.
-
-Let me know if you need the refresh token handler, revocation logic, or integration with your user DB.

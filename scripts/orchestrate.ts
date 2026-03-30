@@ -72,16 +72,78 @@ const AGENTS: Record<string, AgentConfig> = {
 
 // ── Sprint Task Definitions ─────────────────────────────────────────
 
+type TaskFormat = "markdown" | "raw-code" | "yaml" | "json";
+
 type SprintTask = {
   number: number;
   title: string;
   agentId: string;
   outputPath: string;
+  format?: TaskFormat;          // default: inferred from file extension
   contextPaths: string[];
   respondsTo: string[];
   prompt: string;
   maxTokens: number;
 };
+
+function inferFormat(outputPath: string): TaskFormat {
+  if (outputPath.endsWith(".go") || outputPath.endsWith(".tsx") || outputPath.endsWith(".ts") || outputPath.endsWith(".py")) return "raw-code";
+  if (outputPath.endsWith(".yaml") || outputPath.endsWith(".yml")) return "yaml";
+  if (outputPath.endsWith(".json")) return "json";
+  return "markdown";
+}
+
+/**
+ * Extract raw code from LLM output that might be wrapped in markdown fences.
+ * LLMs love wrapping code in ```go ... ``` even when told not to.
+ */
+function extractCode(text: string, outputPath: string): string {
+  let cleaned = text.trim();
+
+  // Remove leading commentary before the first code fence or package/import statement
+  const codeStart = cleaned.search(/^(```|package |import |\/\/ |\/\*|func |type |const |var |FROM |CREATE |module )/m);
+  if (codeStart > 0) {
+    cleaned = cleaned.slice(codeStart);
+  }
+
+  // Strip markdown code fences
+  const fenceMatch = cleaned.match(/^```\w*\n([\s\S]*?)\n```\s*$/);
+  if (fenceMatch) {
+    cleaned = fenceMatch[1];
+  }
+
+  // Handle multiple code blocks — concatenate them (common when LLM outputs "types.go" then "engine.go")
+  const multiBlockMatch = cleaned.match(/```\w*\n/g);
+  if (multiBlockMatch && multiBlockMatch.length > 1) {
+    // Extract all code blocks and concatenate
+    const blocks: string[] = [];
+    const regex = /```\w*\n([\s\S]*?)\n```/g;
+    let match;
+    while ((match = regex.exec(cleaned)) !== null) {
+      blocks.push(match[1].trim());
+    }
+    if (blocks.length > 0) {
+      cleaned = blocks.join("\n\n");
+    }
+  }
+
+  // Final fence strip (single remaining)
+  cleaned = cleaned.replace(/^```\w*\n?/, "").replace(/\n?```\s*$/, "");
+
+  // Strip trailing commentary after the code
+  if (outputPath.endsWith(".go")) {
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (lastBrace > 0 && lastBrace < cleaned.length - 5) {
+      const afterCode = cleaned.slice(lastBrace + 1).trim();
+      // If there's significant text after the last }, it's commentary
+      if (afterCode.length > 50 && !afterCode.startsWith("//") && !afterCode.startsWith("func")) {
+        cleaned = cleaned.slice(0, lastBrace + 1);
+      }
+    }
+  }
+
+  return cleaned.trim() + "\n";
+}
 
 const SPRINT_1_TASKS: SprintTask[] = [
   {
@@ -489,19 +551,44 @@ async function executeTask(task: SprintTask) {
   const soul = loadSoul(agent);
   const context = gatherContext(task);
 
+  const format = task.format ?? inferFormat(task.outputPath);
+  const isCode = format === "raw-code" || format === "yaml" || format === "json";
+
+  const formatInstructions = isCode
+    ? [
+        "",
+        "## CRITICAL OUTPUT RULES",
+        "",
+        "You are producing a CODE FILE that will be written directly to disk and must compile/parse.",
+        "Output ONLY the raw file contents. No markdown. No code fences. No explanation before or after.",
+        "No commentary. No 'Here\'s how I\'d approach this.' Just the code.",
+        "The first line of your output must be the first line of the file (package declaration, import, etc.).",
+        "The last line of your output must be the last line of the file.",
+        "",
+        format === "raw-code" && task.outputPath.endsWith(".go")
+          ? "This is a Go file. Start with `package <name>`. Include all imports. The code must pass `go vet`."
+          : "",
+        format === "raw-code" && task.outputPath.endsWith(".tsx")
+          ? "This is a React/TypeScript file. Export the component. Include all imports."
+          : "",
+      ].filter(Boolean).join("\n")
+    : [
+        "",
+        "Write as yourself — use first person, reference your domain expertise, show your personality.",
+        "If you reference another agent's work, name them explicitly (e.g., 'Quinn's architecture proposes...').",
+        "If you disagree with another agent, say so directly with your reasoning.",
+        "Do NOT start your response with 'Absolutely' or 'Sure' or any preamble. Start with the content.",
+      ].join("\n");
+
   const systemPrompt = [
     soul,
     "",
     "## Project Context",
     "",
-    "You are working on the Living Case Study — a fully public project where 10 AI agents build a complete MSP Security Stack (CNAPP + EDR + SIEM + SOAR) from scratch.",
-    "This is Sprint 1: Discovery + Architecture. Every artifact you produce is public and will be reviewed by other agents.",
-    "Your output will be committed to the GitHub repo and displayed on brainstorm.co/live.",
-    "Every LLM call (including this one) routes through BrainstormRouter with real cost tracking.",
-    "",
-    "Write as yourself — use first person, reference your domain expertise, show your personality from your SOUL.md.",
-    "If you reference another agent's work, name them explicitly (e.g., 'Quinn's architecture proposes...').",
-    "If you disagree with another agent, say so directly with your reasoning.",
+    "You are working on the Living Case Study — a fully public project where 10 AI agents build a complete MSP Security Stack.",
+    "Every artifact you produce is committed to the public GitHub repo. This is real, not a demo.",
+    "Every LLM call routes through BrainstormRouter with real cost tracking.",
+    formatInstructions,
     context,
   ].join("\n");
 
@@ -515,29 +602,62 @@ async function executeTask(task: SprintTask) {
 
   console.log(`  Response: ${result.text.length} chars, ${result.model}, $${result.cost.toFixed(4)}, ${elapsedMs}ms`);
 
-  // Write artifact with BR metadata header
+  // Write artifact — code files get extracted, docs get metadata headers
   const outputDir = join(ROOT, task.outputPath.split("/").slice(0, -1).join("/"));
   mkdirSync(outputDir, { recursive: true });
 
-  const header = [
-    `<!-- Agent: ${agent.id} | Model: ${result.model} | Cost: $${result.cost.toFixed(4)} | Latency: ${elapsedMs}ms -->`,
-    `<!-- Route: ${result.headers["x-br-route-reason"] ?? "?"} | Quality: ${result.headers["x-br-quality-score"] ?? "?"} | Reputation: ${result.headers["x-br-reputation-tier"] ?? "?"} -->`,
-    `<!-- Budget remaining: $${result.headers["x-br-budget-remaining"] ?? "?"} -->`,
-    "",
-  ].join("\n");
+  let fileContent: string;
+  if (isCode) {
+    // Extract raw code — strip markdown fences, commentary, preamble
+    fileContent = extractCode(result.text, task.outputPath);
+    console.log(`  Extracted code: ${fileContent.split("\n").length} lines`);
+  } else {
+    // Markdown docs get BR metadata header
+    const header = [
+      `<!-- Agent: ${agent.id} | Model: ${result.model} | Cost: $${result.cost.toFixed(4)} | Latency: ${elapsedMs}ms -->`,
+      `<!-- Route: ${result.headers["x-br-route-reason"] ?? "?"} | Quality: ${result.headers["x-br-quality-score"] ?? "?"} | Reputation: ${result.headers["x-br-reputation-tier"] ?? "?"} -->`,
+      `<!-- Budget remaining: $${result.headers["x-br-budget-remaining"] ?? "?"} -->`,
+      "",
+    ].join("\n");
+    fileContent = header + result.text + "\n";
+  }
 
-  writeFileSync(join(ROOT, task.outputPath), header + result.text + "\n");
+  writeFileSync(join(ROOT, task.outputPath), fileContent);
   console.log(`  Wrote: ${task.outputPath}`);
 
+  // Build verification for Go code
+  if (task.outputPath.endsWith(".go") && existsSync(join(ROOT, "go.mod"))) {
+    console.log("  Verifying Go build...");
+    try {
+      execFileSync("go", ["vet", "./..."], { cwd: ROOT, stdio: "pipe", timeout: 30000 });
+      console.log("  Build verification: PASS");
+    } catch (err) {
+      const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? "";
+      console.log(`  Build verification: FAIL — ${stderr.slice(0, 200)}`);
+      // Don't block the task — log the failure in the feed entry
+      result.headers["x-build-status"] = "fail";
+      result.headers["x-build-error"] = stderr.slice(0, 200);
+    }
+  }
+
   // Feed entry
+  const buildStatus = result.headers["x-build-status"];
+  const buildError = result.headers["x-build-error"];
+  const lines = isCode ? fileContent.split("\n").length : undefined;
+
   appendFeedEntry({
     timestamp: new Date().toISOString(),
     agent: agent.id,
     phase: `Sprint 1 / Task ${task.number}`,
-    status: "completed",
-    summary: `Completed: ${task.title}. Output: ${task.outputPath}`,
+    status: buildStatus === "fail" ? "build-failed" : "completed",
+    summary: buildStatus === "fail"
+      ? `Completed: ${task.title} (BUILD FAILED: ${buildError}). Output: ${task.outputPath}`
+      : `Completed: ${task.title}. Output: ${task.outputPath}${lines ? ` (${lines} lines)` : ""}`,
     responds_to: task.respondsTo.length > 0 ? task.respondsTo : undefined,
     artifact: task.outputPath,
+    format: format,
+    lines: lines,
+    build_status: buildStatus ?? (isCode && existsSync(join(ROOT, "go.mod")) ? "pass" : undefined),
     cost: `$${result.cost.toFixed(4)}`,
     model: result.model,
     route_reason: result.headers["x-br-route-reason"] ?? "unknown",
@@ -624,15 +744,28 @@ Every task MUST reference prior artifacts via contextPaths. Every task MUST list
 Artifacts built so far:
 ${allArtifactsList}
 
+CRITICAL RULES FOR CODE TASKS:
+- Code files (.go, .tsx, .yaml) must be DIRECTLY WRITABLE TO DISK and must compile/parse.
+- In the task prompt for code tasks, include: "Output ONLY raw code. No markdown fences. No explanation. First line must be the package/import declaration. Code must compile."
+- Go files must include package declaration, all imports, and be syntactically valid.
+- Test files must end in _test.go and use the testing package.
+- Include a "go.mod" creation task early if one doesn't exist yet.
+
+CRITICAL RULES FOR REVIEW/DOC TASKS:
+- Tell the agent: "Do NOT start with 'Absolutely' or 'Sure' or any preamble. Start directly with the content."
+- Review tasks should reference specific line numbers or function names from the code they're reviewing.
+- Compliance tasks should produce evidence tables mapping specific code to specific controls.
+
 Output ONLY valid JSON — an array of task objects:
 - number (integer, continuing from the highest existing task number + 1)
 - title (string — specific, not generic)
 - agentId (string — exact agent ID from the list above)
-- outputPath (string — e.g. "src/scanner/providers/aws.go" or "docs/reviews/sprint-2-security-review.md" or "tests/scanner/policy_engine_test.go")
+- outputPath (string — e.g. "src/scanner/providers/aws.go" or "docs/reviews/sprint-3-security-review.md" or "src/scanner/providers/aws_test.go")
+- format (string — "raw-code" for .go/.tsx/.ts files, "yaml" for .yaml, "markdown" for .md files)
 - contextPaths (string array — paths to prior artifacts this agent should read)
 - respondsTo (string array — agent IDs whose work this task builds on or reviews)
-- prompt (string — detailed, specific task prompt telling the agent exactly what to produce, referencing other agents' work by name)
-- maxTokens (integer — 4000 for code/docs, 6000 for reviews)
+- prompt (string — detailed, specific task prompt. For code tasks: demand raw compilable code, no markdown. For reviews: demand specificity, no preamble.)
+- maxTokens (integer — 4000 for code, 6000 for reviews/docs)
 
 Define 6-8 tasks. Output ONLY the JSON array — no markdown fences, no explanation, no commentary.`,
     6000,

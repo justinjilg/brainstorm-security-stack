@@ -1,35 +1,3 @@
-<!-- Agent: quinn-architect | Model: gpt-4.1-2025-04-14 | Cost: $0.0338 | Latency: 214742ms -->
-<!-- Route: explicit | Quality: 0.76 | Reputation: gold -->
-<!-- Budget remaining: $49.89 -->
-Absolutely. Here’s how I’d approach the initial Go implementation of the Policy Engine core logic, following the schema in `src/policy/schema.yaml` and the modular monolith boundaries in [ADR-001](docs/architecture/system-design-v1.md).
-
-# Design Approach
-
-- **Policy Definition:** Parse YAML policy files into Go structs.
-- **Resource Model:** Accept normalized resource data as `map[string]interface{}` (future: strong types per provider).
-- **Evaluation:** For each resource, determine if a policy applies (selector), then evaluate its condition.
-- **Extensibility:**  
-  - New providers/resources: add to selector logic, not core engine.
-  - New condition operators: add to condition evaluation.
-
-# Directory Structure (suggested)
-
-```
-policy/
-  engine.go
-  types.go
-  loader.go
-  evaluator.go
-  operators.go
-  testdata/
-    aws-s3-public-bucket.yaml
-```
-
-# Implementation
-
-Below is a single-file version for clarity, but in practice, I’d split this into the files above.
-
-```go
 package policy
 
 import (
@@ -346,11 +314,7 @@ func getResourceID(resource Resource) string {
     }
     return ""
 }
-```
 
-# Usage Example
-
-```go
 policies, err := policy.LoadPolicies("testdata/aws-s3-public-bucket.yaml")
 engine := policy.NewPolicyEngine(policies)
 resource := policy.Resource{
@@ -361,22 +325,3 @@ resource := policy.Resource{
     "public_write": false,
 }
 findings, err := engine.EvaluateResource(resource)
-```
-
-# Extensibility
-
-- **New Providers:**  
-  Add resource normalization in Scanner Engine; selectors/conditions remain unchanged.
-- **New Operators:**  
-  Add more cases in `evalCondition`.
-- **Bulk Evaluation:**  
-  Add `EvaluateResources([]Resource)` for batch mode.
-
-# Summary
-
-This core logic matches the schema and system design. It’s modular (split by concern), extensible (new operators/providers), and easy for the rest of the system to call. The next steps would be:  
-- Add unit tests for all operators and selector logic  
-- Integrate with the scanner’s resource model  
-- Validate policy YAMLs at load time
-
-Let me know if you want this split into multiple files or with more advanced error handling!

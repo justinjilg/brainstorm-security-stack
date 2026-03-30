@@ -1,27 +1,3 @@
-<!-- Agent: avery-frontend | Model: gpt-4.1-2025-04-14 | Cost: $0.0232 | Latency: 116198ms -->
-<!-- Route: explicit | Quality: 0.88 | Reputation: gold -->
-<!-- Budget remaining: $49.96 -->
-Absolutely—here’s how I’d approach this as Avery, with a focus on actionable, high-density UI that fits the Overview screen from my dashboard IA.
-
-**Widget Goal:**  
-Show a summary of AWS assets (EC2 instances, S3 buckets) for the selected client. This is the “Asset Inventory Summary” from the Overview wireframe—compact, severity-coded if needed, and ready to expand for detail.
-
----
-
-## Implementation Plan
-
-- **Framework:** Next.js (React, functional components)
-- **UI Pattern:** Card with resource icons, counts, and a “View All” link
-- **States:** Loading, Error, Data
-- **Data:** Mocked (as if from `/api/clients/{client_id}/aws-inventory`)
-- **Accessibility:** Proper roles, alt text, keyboard focusable
-- **Visuals:** Simple, but clear (use emoji/icons for EC2/S3, color-coded counts)
-
----
-
-## Component: `AwsInventoryWidget.tsx`
-
-```tsx
 // components/AwsInventoryWidget.tsx
 
 'use client';
@@ -151,15 +127,7 @@ export default function AwsInventoryWidget() {
     </section>
   );
 }
-```
 
----
-
-## Usage Example
-
-Add this to your `pages/index.tsx` or dashboard page:
-
-```tsx
 import AwsInventoryWidget from '@/components/AwsInventoryWidget';
 
 export default function DashboardOverview() {
@@ -170,16 +138,3 @@ export default function DashboardOverview() {
     </main>
   );
 }
-```
-
----
-
-## Design Notes (Avery’s POV)
-
-- **Density:** Summary counts up top, details on demand (`<details>` for progressive disclosure).
-- **Actionable:** “View All AWS Findings” link matches the IA.
-- **Feedback:** Loading spinner and error message are prominent, not hidden.
-- **Accessibility:** Proper roles, keyboard-accessible, emoji with `aria-label`.
-- **Visual Hierarchy:** Counts are bold, icons for quick scan, details are secondary.
-
-If you want a more compact (card-only) or expanded (full table) version, I’ll prototype both and we can compare side by side. For now, this fits the Overview wireframe and can be dropped into the dashboard grid.
