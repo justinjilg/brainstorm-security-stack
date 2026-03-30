@@ -1,0 +1,97 @@
+<!-- Agent: morgan-devops | Model: gpt-4.1-2025-04-14 | Cost: $0.0222 | Latency: 111455ms -->
+<!-- Route: explicit | Quality: 0.76 | Reputation: gold -->
+<!-- Budget remaining: $49.96 -->
+Absolutely. Here’s how I’d update the CI/CD pipeline configuration (assuming GitHub Actions, per [cicd-pipeline-v1.md](docs/architecture/cicd-pipeline-v1.md)) to support **fast feedback** for the new AWS scanner (`src/scanner/providers/aws.go`) and authentication handler (`src/auth/handler.go`) modules. This includes **build**, **test**, and **lint** steps, and ensures each module is validated independently and in parallel for rapid iteration.
+
+Below is a focused workflow YAML excerpt (`.github/workflows/ci.yml`) with inline comments. This is meant to be dropped into the repo, and will scale as more modules are added.
+
+---
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # 1. Lint (golangci-lint) — fast fail for style, vet, staticcheck, etc.
+  lint:
+    name: Lint Go Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2
+      - name: Run golangci-lint (scanner)
+        run: golangci-lint run ./src/scanner/providers/aws.go
+      - name: Run golangci-lint (auth)
+        run: golangci-lint run ./src/auth/handler.go
+
+  # 2. Build — ensure both modules compile independently (fail fast)
+  build:
+    name: Build Modules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Build AWS Scanner
+        run: go build -v ./src/scanner/providers/aws.go
+      - name: Build Auth Handler
+        run: go build -v ./src/auth/handler.go
+
+  # 3. Test — run unit tests for each module, parallelized for fast feedback
+  test-scanner:
+    name: Test AWS Scanner
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Run Scanner Tests
+        run: go test -v ./src/scanner/...
+
+  test-auth:
+    name: Test Auth Handler
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Run Auth Tests
+        run: go test -v ./src/auth/...
+
+  # 4. Aggregate — only proceed to further pipeline stages if all above pass
+  # (e.g., security scan, build Docker image, etc.)
+```
+
+---
+
+**Key points:**
+- **Lint, build, and test** run as separate jobs for **fast fail** and **parallel feedback**.
+- Each module (`scanner`, `auth`) is **built and tested independently**; this scales as more modules are added.
+- **golangci-lint** runs on both files (could be expanded to the whole repo, but focused here for speed).
+- **`needs: [build]`** ensures tests only run if the build passes.
+- You can expand the `go test` and `golangci-lint` commands to cover more files as modules grow.
+
+**Why this works:**  
+- If someone breaks the AWS scanner, they know right away—without waiting for the whole monolith to build or test.
+- If the auth handler fails lint or tests, it’s isolated and visible.
+- This setup matches the pipeline design: **parallel, modular, fail-fast, and ready for expansion**.
+
+If you want to add coverage reporting, caching, or matrix builds for Go versions, just say the word. But this is the minimal config for fast, reliable feedback on these two modules.
