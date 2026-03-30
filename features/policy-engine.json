@@ -3,8 +3,8 @@
   "title": "Policy Evaluation Engine",
   "description": "Evaluate discovered assets against YAML-defined security rules. Map findings to CIS/SOC2/HIPAA controls. Deduplicate via pgvector embeddings.",
   "implementAgent": "quinn-architect",
-  "currentPhase": "review",
-  "status": "blocked",
+  "currentPhase": "test",
+  "status": "active",
   "artifacts": {
     "spec": [
       "docs/specs/policy-engine.md"
@@ -16,9 +16,61 @@
       "src/policy/engine.go",
       "src/policy/types.go",
       "src/policy/loader.go"
+    ],
+    "review": [
+      "docs/reviews/policy-engine-review.md"
     ]
   },
-  "reviewResults": [],
+  "reviewResults": [
+    {
+      "reviewer": "casey-apisec",
+      "verdict": "fail",
+      "findings": [
+        "",
+        "1. **Findings**:",
+        "   1.1. In `evaluateCondition`, the `condition` string is split and directly compared without sufficient validation or sanitization. This could lead to unexpected behavior if `condition` is malformed or maliciously crafted.",
+        "   1.2. The `ExportFindings` function uses `ioutil.WriteFile` with a static file permission of `0644`, which may expose sensitive findings to unauthorized users if the file is written in a shared or insecure location.",
+        "   1.3. In `LoadRules`, there is no validation of the parsed YAML rules. Malformed or unexpected rule structures could cause runtime errors during evaluation.",
+        "   1.4. The `mapToCompliance` function uses hardcoded string prefixes to determine compliance mappings, which is brittle and not extensible.",
+        "",
+        "2. **Security Concerns**:",
+        "   2.1. **Injection Risk**: The `evaluateCondition` function does not validate or sanitize the `condition` input, which could lead to logic manipulation or unexpected behavior if the input is malicious."
+      ],
+      "cost": 0.009735
+    },
+    {
+      "reviewer": "taylor-qa",
+      "verdict": "fail",
+      "findings": [
+        "",
+        "1. **Findings**:",
+        "   1.1. In `evaluateCondition`, the `condition` string is split and directly compared without sufficient validation or sanitization. This could lead to unexpected behavior if `condition` is malformed or maliciously crafted.",
+        "   1.2. The `ExportFindings` function uses `ioutil.WriteFile` with a static file permission of `0644`, which may expose sensitive findings to unauthorized users if the file is written in a shared or insecure location.",
+        "   1.3. In `LoadRules`, there is no validation of the parsed YAML rules. Malformed or unexpected rule structures could cause runtime errors during evaluation.",
+        "   1.4. The `mapToCompliance` function uses hardcoded string prefixes to determine compliance mappings, which is brittle and not extensible.",
+        "",
+        "2. **Security Concerns**:",
+        "   2.1. **Injection Risk**: The `evaluateCondition` function does not validate or sanitize the `condition` input, which could lead to logic manipulation or unexpected behavior if the input is malicious."
+      ],
+      "cost": 0
+    },
+    {
+      "reviewer": "alex-crypto",
+      "verdict": "fail",
+      "findings": [
+        "",
+        "1. **Findings**:",
+        "   1.1. In `evaluateCondition`, the `condition` string is split and directly compared without sufficient validation or sanitization. This could lead to unexpected behavior if `condition` is malformed or maliciously crafted.",
+        "   1.2. The `ExportFindings` function uses `ioutil.WriteFile` with a static file permission of `0644`, which may expose sensitive findings to unauthorized users if the file is written in a shared or insecure location.",
+        "   1.3. In `LoadRules`, there is no validation of the parsed YAML rules. Malformed or unexpected rule structures could cause runtime errors during evaluation.",
+        "   1.4. The `mapToCompliance` function uses hardcoded string prefixes to determine compliance mappings, which is brittle and not extensible.",
+        "",
+        "2. **Security Concerns**:",
+        "   2.1. **Injection Risk**: The `evaluateCondition` function does not validate or sanitize the `condition` input, which could lead to logic manipulation or unexpected behavior if the input is malicious."
+      ],
+      "cost": 0
+    }
+  ],
   "buildResults": [
     {
       "passed": false,

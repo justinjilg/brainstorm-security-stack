@@ -1200,6 +1200,30 @@
       "route_reason": "semantic-cache",
       "quality_score": "0.72",
       "latency_ms": 319
+    },
+    {
+      "timestamp": "2026-03-30T20:41:44.153Z",
+      "agent": "review-panel",
+      "feature": "policy-engine",
+      "phase": "review",
+      "status": "rejected",
+      "summary": "Review: rejected (0/3 pass). ",
+      "artifact": "docs/reviews/policy-engine-review.md",
+      "cost": "$0.0097",
+      "reviewers": [
+        {
+          "agent": "casey-apisec",
+          "verdict": "fail"
+        },
+        {
+          "agent": "taylor-qa",
+          "verdict": "fail"
+        },
+        {
+          "agent": "alex-crypto",
+          "verdict": "fail"
+        }
+      ]
     }
   ]
 }
