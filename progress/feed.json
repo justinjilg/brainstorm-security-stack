@@ -1009,6 +1009,38 @@
       "route_reason": "semantic-cache",
       "quality_score": "0.75",
       "latency_ms": 462
+    },
+    {
+      "timestamp": "2026-03-30T20:22:04.781Z",
+      "agent": "quinn-architect",
+      "feature": "aws-scanner",
+      "phase": "implement",
+      "status": "build-failed",
+      "summary": "Implemented: src/scanner/providers/aws.go (148 lines)",
+      "artifact": "src/scanner/providers/aws.go",
+      "format": "raw-code",
+      "build_status": "fail",
+      "cost": "$0.1705",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "thompson-sampling",
+      "quality_score": "0.86",
+      "latency_ms": 25858
+    },
+    {
+      "timestamp": "2026-03-30T20:22:08.893Z",
+      "agent": "quinn-architect",
+      "feature": "aws-scanner",
+      "phase": "implement",
+      "status": "build-failed",
+      "summary": "Implemented: src/scanner/types.go (148 lines)",
+      "artifact": "src/scanner/types.go",
+      "format": "raw-code",
+      "build_status": "fail",
+      "cost": "$0.0000",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "semantic-cache",
+      "quality_score": "0.84",
+      "latency_ms": 177
     }
   ]
 }

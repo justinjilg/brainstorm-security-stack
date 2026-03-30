@@ -3,18 +3,53 @@
   "title": "AWS Resource Scanner",
   "description": "Enumerate AWS resources (EC2, S3, IAM, RDS, Lambda) using read-only credentials. Normalize into common Asset structs. Concurrent scanning with worker pool.",
   "implementAgent": "quinn-architect",
-  "currentPhase": "implement",
-  "status": "active",
+  "currentPhase": "review",
+  "status": "blocked",
   "artifacts": {
     "spec": [
       "docs/specs/aws-scanner.md"
     ],
     "design": [
       "docs/design/aws-scanner.md"
+    ],
+    "implement": [
+      "src/scanner/providers/aws.go",
+      "src/scanner/types.go"
     ]
   },
   "reviewResults": [],
-  "buildResults": [],
+  "buildResults": [
+    {
+      "passed": false,
+      "error": "go: downloading github.com/aws/aws-sdk-go-v2 v1.36.3\ngo: downloading github.com/aws/aws-sdk-go-v2/service/ec2 v1.210.0\ngo: downloading github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2\ngo: downloading gopkg.in/yaml.v3 v3.0.1\ngo: downloading github.com/aws/smithy-go v1.22.2\ngo: downloading github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10\ngo: downloading github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34\ngo: downloading github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.34\ngo: downloading github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3\ngo: downloading github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.7.0\ngo: downloading github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15\ngo: downloading github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.15\ngo: downloading github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34\nsrc/scanner/providers/aws.go:9:2: no required module provides package github.com/aws/aws-sdk-go-v2/config; to add it:\n\tgo get github.com/aws/aws-sdk-go-v2/config\nsrc/scanner/providers/aws.go:11:2: no required module provides package github.com/aws/aws-sdk-go-v2/service/iam; to add it:\n\tgo get github.com/aws/aws-sdk-go-v2/service/iam\nsrc/scanner/providers/aws.go:12:2: no required module provides package github.com/aws/aws-sdk-go-v2/service/lambda; to add it:\n\tgo get github.com/aws/aws-sdk-go-v2/service/lambda\nsrc/scanner/providers/aws.go:13:2: no required module provides package github.com/aws/aws-sdk-go-v2/service/rds; to add it:\n\tgo get github.com/aws/aws-sdk-go-v2/service/rds",
+      "attempt": 1
+    },
+    {
+      "passed": false,
+      "error": "src/auth/auth_test.go:54:31: expected '}', found 'EOF'",
+      "attempt": 2
+    },
+    {
+      "passed": false,
+      "error": "src/auth/auth_test.go:54:31: expected '}', found 'EOF'",
+      "attempt": 3
+    },
+    {
+      "passed": false,
+      "error": "src/scanner/types.go:9:2: no required module provides package github.com/aws/aws-sdk-go-v2/config; to add it:\n\tgo get github.com/aws/aws-sdk-go-v2/config\nsrc/scanner/types.go:11:2: no required module provides package github.com/aws/aws-sdk-go-v2/service/iam; to add it:\n\tgo get github.com/aws/aws-sdk-go-v2/service/iam\nsrc/scanner/types.go:12:2: no required module provides package github.com/aws/aws-sdk-go-v2/service/lambda; to add it:\n\tgo get github.com/aws/aws-sdk-go-v2/service/lambda\nsrc/scanner/types.go:13:2: no required module provides package github.com/aws/aws-sdk-go-v2/service/rds; to add it:\n\tgo get github.com/aws/aws-sdk-go-v2/service/rds",
+      "attempt": 1
+    },
+    {
+      "passed": false,
+      "error": "src/auth/auth_test.go:54:31: expected '}', found 'EOF'",
+      "attempt": 2
+    },
+    {
+      "passed": false,
+      "error": "src/auth/auth_test.go:54:31: expected '}', found 'EOF'",
+      "attempt": 3
+    }
+  ],
   "outputPaths": {
     "spec": "docs/specs/aws-scanner.md",
     "design": "docs/design/aws-scanner.md",
