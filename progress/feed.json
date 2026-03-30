@@ -158,6 +158,24 @@
       "reputation_tier": "gold",
       "latency_ms": 18455,
       "budget_remaining": 49.99
+    },
+    {
+      "timestamp": "2026-03-30T00:04:30.414Z",
+      "agent": "quinn-architect",
+      "phase": "Sprint 1 / Task 2",
+      "status": "completed",
+      "summary": "Completed: System architecture + ADR-001. Output: docs/architecture/system-design-v1.md",
+      "responds_to": [
+        "sage-pm"
+      ],
+      "artifact": "docs/architecture/system-design-v1.md",
+      "cost": "$0.0220",
+      "model": "gpt-4.1-2025-04-14",
+      "route_reason": "explicit",
+      "quality_score": "0.89",
+      "reputation_tier": "gold",
+      "latency_ms": 212921,
+      "budget_remaining": 50
     }
   ]
 }
