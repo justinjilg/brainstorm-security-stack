@@ -11,20 +11,55 @@
 
 - Repository scaffolded with agent SOUL.md files
 - Directory structure created for all four components (CSPM, EDR, SIEM, SOAR)
+- **Sprint 1 complete — 6/6 tasks shipped via BrainstormRouter**
+
+### Sprint 1 Artifacts (all committed to `main`)
+
+| # | Agent | Artifact | Path |
+|---|-------|----------|------|
+| 1 | Sage (GPT-5.4) | CSPM PRD v1 | `docs/prds/cspm-v1.md` |
+| 2 | Quinn (Opus 4.6) | System Architecture + ADR-001 | `docs/architecture/system-design-v1.md` |
+| 3 | Jordan (Opus 4.6) | Auth Design + ADR-002 | `docs/architecture/auth-design-v1.md` |
+| 4 | River (Gemini) | CSPM Threat Model (STRIDE) | `docs/security/threat-model-v1.md` |
+| 5 | Casey (Sonnet 4.6) | API Security Requirements | `docs/security/api-security-requirements-v1.md` |
+| 6 | Alex (Sonnet 4.6) | Cryptographic Requirements | `docs/security/crypto-requirements-v1.md` |
 
 ## Agent Status
 
-| Agent | Last Active | Current Task | Token Budget |
-|-------|-------------|-------------|--------------|
-| All | — | Awaiting Sprint 1 kickoff | — |
+| Agent | Last Active | Artifact Produced |
+|-------|-------------|-------------------|
+| Sage | 2026-03-29 | CSPM PRD |
+| Quinn | 2026-03-29 | System Architecture + ADR-001 |
+| Jordan | 2026-03-29 | Auth Design + ADR-002 |
+| River | 2026-03-29 | Threat Model |
+| Casey | 2026-03-29 | API Security Requirements |
+| Alex | 2026-03-29 | Cryptographic Requirements |
+| Morgan | — | Awaiting Sprint 2 |
+| Taylor | — | Awaiting Sprint 2 |
+| Sam | — | Awaiting Sprint 2 |
+| Avery | — | Awaiting Sprint 2 |
 
-## Decisions Made
+## Decisions Made (from Sprint 1 artifacts)
 
-None yet. Sprint 1 kickoff will establish initial architecture decisions.
+1. **ADR-001 (Quinn):** Architecture decision on monolith vs microservices — see `docs/architecture/system-design-v1.md`
+2. **ADR-002 (Jordan):** Auth design — JWT + RBAC, multi-tenant isolation — see `docs/architecture/auth-design-v1.md`
+3. **Threat model (River):** STRIDE analysis, attack surfaces identified — see `docs/security/threat-model-v1.md`
 
-## Open Questions
+## Open Questions (answered in Sprint 1)
 
-1. CSPM: Start with AWS-only or multi-cloud from day one?
-2. EDR: Agent-based or agentless collection?
-3. SIEM: Real-time streaming or batch correlation?
-4. Dashboard: Single-page or multi-page layout?
+1. CSPM: AWS-first, multi-cloud in Sprint 3+ (per Sage's PRD)
+2. Auth: JWT + RBAC chosen (per Jordan's ADR-002)
+3. Architecture: See Quinn's ADR-001 for monolith/microservices decision
+
+## Sprint 2 Scope (not yet defined — define before next session)
+
+Sprint 2 should cover CSPM implementation. Suggested tasks:
+- Morgan: CI/CD pipeline design (missing from Sprint 1)
+- Taylor: Test strategy document (missing from Sprint 1)
+- Sam: Compliance requirements matrix (missing from Sprint 1)
+- Avery: Dashboard wireframes (missing from Sprint 1)
+- Jordan/Alex: Implement JWT auth handler (Go) — `auth/handler.go`
+- Alex/Casey: Implement AWS scanner (Go) — `scanner/aws/scanner.go`
+- Quinn: Implement policy engine (Go) — `policy/engine.go`
+
+To start Sprint 2, define tasks in `scripts/orchestrate.ts` `SPRINT_2_TASKS` and update `sprints/current.md`.
