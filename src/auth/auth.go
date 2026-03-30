@@ -3,49 +3,98 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"net"
+	"io"
 	"net/http"
 	"strings"
 	"time"
-
-	"crypto/ecdsa"
-
-	"github.com/golang-jwt/jwt/v5"
-
-	"example.com/project/audit"
-	"example.com/project/keymanager"
-	"example.com/project/rbac"
-	"example.com/project/tenantconfig"
-	"example.com/project/token"
 )
 
-// Handler encapsulates dependencies for JWT authentication endpoints.
+// --- RBAC Constants ---
+const (
+	RoleMSPAdmin         = "msp_admin"
+	RoleSecurityAnalyst  = "security_analyst"
+	RoleComplianceOfficer = "compliance_officer"
+)
+
+var reservedClaims = map[string]struct{}{
+	"exp":       {},
+	"iat":       {},
+	"nbf":       {},
+	"iss":       {},
+	"aud":       {},
+	"sub":       {},
+	"jti":       {},
+	"tenant_id": {},
+	"roles":     {},
+	"user_id":   {},
+	"session_id":{},
+	"issued_by": {},
+}
+
+// --- TokenService Interface ---
+
+type TokenService interface {
+	IssueAccessToken(userID string, tenantID string, roles []string, customClaims map[string]interface{}) (accessToken string, refreshToken string, err error)
+	VerifyAccessToken(token string, tenantID string) (*Claims, error)
+	VerifyRefreshToken(token string, tenantID string) (*Claims, error)
+	RotateRefreshToken(refreshToken string, tenantID string) (newRefreshToken string, err error)
+}
+
+// --- Claims Struct ---
+
+type Claims struct {
+	UserID    string                 `json:"user_id"`
+	TenantID  string                 `json:"tenant_id"`
+	Roles     []string               `json:"roles"`
+	SessionID string                 `json:"session_id"`
+	IssuedBy  string                 `json:"issued_by"`
+	Custom    map[string]interface{} `json:"custom,omitempty"`
+	Exp       int64                  `json:"exp"`
+	Iat       int64                  `json:"iat"`
+	Aud       string                 `json:"aud"`
+	Iss       string                 `json:"iss"`
+}
+
+// --- RBACService Interface ---
+
+type RBACService interface {
+	HasRole(requiredRoles []string, userRoles []string) bool
+}
+
+// --- AuditLogger Interface ---
+
+type AuditLogger interface {
+	Log(event string, details map[string]interface{})
+}
+
+// --- TenantConfigManager Interface ---
+
+type TenantConfigManager interface {
+	GetTenantRoles(tenantID string) ([]string, error)
+}
+
+// --- Handler Struct ---
+
 type Handler struct {
-	TokenService      token.TokenService
-	RBACService       rbac.RBACService
-	KeyManager        keymanager.KeyManager
-	AuditLogger       audit.AuditLogger
-	TenantConfig      tenantconfig.TenantConfigManager
-	TokenConfig       token.TokenConfig
-	RefreshBlacklist  RefreshTokenBlacklist
+	TokenService        TokenService
+	RBACService         RBACService
+	AuditLogger         AuditLogger
+	TenantConfigManager TenantConfigManager
 }
 
-// RefreshTokenBlacklist provides refresh token revocation.
-type RefreshTokenBlacklist interface {
-	IsBlacklisted(token string) bool
-	Blacklist(token string) error
-}
+// --- TokenRequest Struct ---
 
-// TokenRequest represents a login or token refresh request.
 type TokenRequest struct {
 	UserID      string                 `json:"user_id"`
 	TenantID    string                 `json:"tenant_id"`
 	Roles       []string               `json:"roles"`
+	SessionID   string                 `json:"session_id"`
+	IssuedBy    string                 `json:"issued_by"`
 	Custom      map[string]interface{} `json:"custom,omitempty"`
-	RefreshToken string                `json:"refresh_token,omitempty"`
 }
 
-// TokenResponse represents a JWT issuance or refresh response.
+// --- TokenResponse Struct ---
+
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -53,267 +102,179 @@ type TokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-// RBACRequest wraps a request for RBAC enforcement.
-type RBACRequest struct {
-	Resource string `json:"resource"`
-	Action   string `json:"action"`
+// --- RefreshRequest Struct ---
+
+type RefreshRequest struct {
+	TenantID     string `json:"tenant_id"`
+	RefreshToken string `json:"refresh_token"`
 }
 
-// IssueTokenHandler handles POST /auth/token for initial JWT issuance.
-func (h *Handler) IssueTokenHandler(w http.ResponseWriter, r *http.Request) {
+// --- RefreshResponse Struct ---
+
+type RefreshResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+	TokenType    string `json:"token_type"`
+}
+
+// --- Utility: Validate Custom Claims ---
+
+func validateCustomClaims(custom map[string]interface{}) error {
+	for k := range custom {
+		if _, reserved := reservedClaims[strings.ToLower(k)]; reserved {
+			return errors.New("custom claim '" + k + "' is reserved and cannot be set")
+		}
+	}
+	return nil
+}
+
+// --- Utility: Limit Request Body Size ---
+
+const maxBodyBytes = 1 << 16 // 64 KiB
+
+func decodeJSONLimited(r io.Reader, v interface{}) error {
+	limited := io.LimitReader(r, maxBodyBytes)
+	dec := json.NewDecoder(limited)
+	return dec.Decode(v)
+}
+
+// --- Handler: Token Issuance ---
+
+func (h *Handler) TokenIssuanceHandler(w http.ResponseWriter, r *http.Request) {
 	var req TokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSONLimited(r.Body, &req); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	if req.UserID == "" || req.TenantID == "" || len(req.Roles) == 0 {
+	if req.UserID == "" || req.TenantID == "" || len(req.Roles) == 0 || req.SessionID == "" || req.IssuedBy == "" {
 		http.Error(w, "missing required fields", http.StatusBadRequest)
 		return
 	}
-	ip := getIP(r)
-	now := time.Now().Unix()
-	sessionID := generateSessionID(req.UserID, req.TenantID, now)
-	claims := map[string]interface{}{
-		"session_id": sessionID,
-		"issued_by":  "auth_handler",
-		"ip_address": ip,
+	if req.Custom == nil {
+		req.Custom = make(map[string]interface{})
 	}
-	for k, v := range req.Custom {
-		claims[k] = v
-	}
-	accessToken, refreshToken, err := h.TokenService.IssueAccessToken(
-		req.UserID, req.TenantID, req.Roles, claims,
-	)
-	if err != nil {
-		http.Error(w, "token issuance failed", http.StatusInternalServerError)
-		h.AuditLogger.LogEvent("token_issue_failed", map[string]interface{}{
-			"user_id":   req.UserID,
-			"tenant_id": req.TenantID,
-			"ip":        ip,
-			"error":     err.Error(),
-		})
+	if err := validateCustomClaims(req.Custom); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	h.AuditLogger.LogEvent("token_issued", map[string]interface{}{
-		"user_id":    req.UserID,
-		"tenant_id":  req.TenantID,
-		"session_id": sessionID,
-		"ip":         ip,
+	accessToken, refreshToken, err := h.TokenService.IssueAccessToken(
+		req.UserID,
+		req.TenantID,
+		req.Roles,
+		req.Custom,
+	)
+	if err != nil {
+		http.Error(w, "failed to issue token", http.StatusInternalServerError)
+		return
+	}
+	h.AuditLogger.Log("token_issued", map[string]interface{}{
+		"user_id":   req.UserID,
+		"tenant_id": req.TenantID,
+		"session_id": req.SessionID,
+		"issued_by": req.IssuedBy,
+		"time":      time.Now().UTC().Format(time.RFC3339),
 	})
 	resp := TokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		ExpiresIn:    int64(h.TokenConfig.AccessTokenTTL.Seconds()),
+		ExpiresIn:    900, // 15 min, adjust as needed
 		TokenType:    "Bearer",
 	}
-	writeJSON(w, resp)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
 
-// RefreshTokenHandler handles POST /auth/refresh to rotate refresh tokens.
+// --- Handler: Token Verification (RBAC Enforcement) ---
+
+func (h *Handler) RBACMiddleware(requiredRoles []string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authz := r.Header.Get("Authorization")
+		if !strings.HasPrefix(authz, "Bearer ") {
+			http.Error(w, "missing or invalid Authorization header", http.StatusUnauthorized)
+			return
+		}
+		token := strings.TrimPrefix(authz, "Bearer ")
+		tenantID := r.Header.Get("X-Tenant-ID")
+		if tenantID == "" {
+			http.Error(w, "missing X-Tenant-ID header", http.StatusBadRequest)
+			return
+		}
+		claims, err := h.TokenService.VerifyAccessToken(token, tenantID)
+		if err != nil {
+			http.Error(w, "invalid or expired token", http.StatusUnauthorized)
+			return
+		}
+		if !h.RBACService.HasRole(requiredRoles, claims.Roles) {
+			http.Error(w, "forbidden: insufficient role", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// --- Handler: Refresh Token ---
+
 func (h *Handler) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
-	var req TokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var req RefreshRequest
+	if err := decodeJSONLimited(r.Body, &req); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	refreshToken := req.RefreshToken
-	tenantID := req.TenantID
-	ip := getIP(r)
-	if refreshToken == "" || tenantID == "" {
-		http.Error(w, "missing refresh_token or tenant_id", http.StatusBadRequest)
+	if req.TenantID == "" || req.RefreshToken == "" {
+		http.Error(w, "missing required fields", http.StatusBadRequest)
 		return
 	}
-	if h.RefreshBlacklist.IsBlacklisted(refreshToken) {
-		http.Error(w, "refresh token revoked", http.StatusUnauthorized)
-		h.AuditLogger.LogEvent("refresh_token_reused", map[string]interface{}{
-			"tenant_id": tenantID,
-			"ip":        ip,
-		})
-		return
-	}
-	newRefreshToken, err := h.TokenService.RotateRefreshToken(refreshToken, tenantID)
+	claims, err := h.TokenService.VerifyRefreshToken(req.RefreshToken, req.TenantID)
 	if err != nil {
-		http.Error(w, "refresh failed", http.StatusUnauthorized)
-		h.AuditLogger.LogEvent("refresh_token_failed", map[string]interface{}{
-			"tenant_id": tenantID,
-			"ip":        ip,
-			"error":     err.Error(),
-		})
+		http.Error(w, "invalid or expired refresh token", http.StatusUnauthorized)
 		return
 	}
-	claims, err := h.TokenService.VerifyAccessToken(refreshToken, tenantID)
+	newRefreshToken, err := h.TokenService.RotateRefreshToken(req.RefreshToken, req.TenantID)
 	if err != nil {
-		http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+		http.Error(w, "failed to rotate refresh token", http.StatusInternalServerError)
 		return
 	}
-	h.RefreshBlacklist.Blacklist(refreshToken)
 	accessToken, _, err := h.TokenService.IssueAccessToken(
-		claims.UserID, claims.TenantID, claims.Roles, claims.Custom,
+		claims.UserID,
+		claims.TenantID,
+		claims.Roles,
+		claims.Custom,
 	)
 	if err != nil {
-		http.Error(w, "token issuance failed", http.StatusInternalServerError)
+		http.Error(w, "failed to issue access token", http.StatusInternalServerError)
 		return
 	}
-	h.AuditLogger.LogEvent("token_refreshed", map[string]interface{}{
-		"user_id":    claims.UserID,
-		"tenant_id":  claims.TenantID,
+	h.AuditLogger.Log("refresh_token_rotated", map[string]interface{}{
+		"user_id":   claims.UserID,
+		"tenant_id": claims.TenantID,
 		"session_id": claims.SessionID,
-		"ip":         ip,
+		"issued_by": claims.IssuedBy,
+		"time":      time.Now().UTC().Format(time.RFC3339),
 	})
-	resp := TokenResponse{
+	resp := RefreshResponse{
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
-		ExpiresIn:    int64(h.TokenConfig.AccessTokenTTL.Seconds()),
+		ExpiresIn:    900, // 15 min, adjust as needed
 		TokenType:    "Bearer",
 	}
-	writeJSON(w, resp)
-}
-
-// VerifyTokenHandler handles POST /auth/verify to verify JWTs.
-func (h *Handler) VerifyTokenHandler(w http.ResponseWriter, r *http.Request) {
-	tokenString := extractBearerToken(r)
-	tenantID := r.URL.Query().Get("tenant_id")
-	ip := getIP(r)
-	if tokenString == "" || tenantID == "" {
-		http.Error(w, "missing token or tenant_id", http.StatusBadRequest)
-		return
-	}
-	claims, err := h.TokenService.VerifyAccessToken(tokenString, tenantID)
-	if err != nil {
-		http.Error(w, "invalid token", http.StatusUnauthorized)
-		h.AuditLogger.LogEvent("token_verification_failed", map[string]interface{}{
-			"tenant_id": tenantID,
-			"ip":        ip,
-			"error":     err.Error(),
-		})
-		return
-	}
-	h.AuditLogger.LogEvent("token_verified", map[string]interface{}{
-		"user_id":    claims.UserID,
-		"tenant_id":  claims.TenantID,
-		"session_id": claims.SessionID,
-		"ip":         ip,
-	})
-	writeJSON(w, claims)
-}
-
-// RBACEnforceHandler enforces RBAC for a given resource/action.
-func (h *Handler) RBACEnforceHandler(w http.ResponseWriter, r *http.Request) {
-	tokenString := extractBearerToken(r)
-	tenantID := r.URL.Query().Get("tenant_id")
-	var req RBACRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
-		return
-	}
-	if tokenString == "" || tenantID == "" {
-		http.Error(w, "missing token or tenant_id", http.StatusBadRequest)
-		return
-	}
-	claims, err := h.TokenService.VerifyAccessToken(tokenString, tenantID)
-	if err != nil {
-		http.Error(w, "invalid token", http.StatusUnauthorized)
-		return
-	}
-	err = h.RBACService.Enforce(claims.Roles, req.Resource, req.Action)
-	if err != nil {
-		http.Error(w, "access denied", http.StatusForbidden)
-		h.AuditLogger.LogEvent("rbac_denied", map[string]interface{}{
-			"user_id":    claims.UserID,
-			"tenant_id":  claims.TenantID,
-			"session_id": claims.SessionID,
-			"resource":   req.Resource,
-			"action":     req.Action,
-			"roles":      claims.Roles,
-		})
-		return
-	}
-	h.AuditLogger.LogEvent("rbac_granted", map[string]interface{}{
-		"user_id":    claims.UserID,
-		"tenant_id":  claims.TenantID,
-		"session_id": claims.SessionID,
-		"resource":   req.Resource,
-		"action":     req.Action,
-		"roles":      claims.Roles,
-	})
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"result":"granted"}`))
-}
-
-// extractBearerToken gets the Bearer token from Authorization header.
-func extractBearerToken(r *http.Request) string {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return ""
-	}
-	parts := strings.SplitN(authHeader, " ", 2)
-	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-		return ""
-	}
-	return parts[1]
-}
-
-// getIP extracts the remote IP address for audit logging.
-func getIP(r *http.Request) string {
-	ip := r.Header.Get("X-Forwarded-For")
-	if ip != "" {
-		parts := strings.Split(ip, ",")
-		return strings.TrimSpace(parts[0])
-	}
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return ip
-}
-
-// writeJSON writes a JSON response.
-func writeJSON(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(v)
+	json.NewEncoder(w).Encode(resp)
 }
 
-// generateSessionID creates a session ID for audit and compliance.
-func generateSessionID(userID, tenantID string, now int64) string {
-	return strings.Join([]string{userID, tenantID, time.Unix(now, 0).Format(time.RFC3339Nano)}, "-")
-}
+// --- Example RBACService Implementation ---
 
-// --- Example ECDSA JWT signing for completeness (not used directly in handler) ---
+type DefaultRBACService struct{}
 
-// signJWT signs claims with ECDSA P-256 for demonstration.
-func signJWT(claims token.Claims, priv *ecdsa.PrivateKey) (string, error) {
-	tokenObj := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
-		"user_id":    claims.UserID,
-		"tenant_id":  claims.TenantID,
-		"roles":      claims.Roles,
-		"session_id": claims.SessionID,
-		"issued_by":  claims.IssuedBy,
-		"custom":     claims.Custom,
-		"exp":        claims.Exp,
-		"iat":        claims.Iat,
-		"aud":        claims.Aud,
-		"iss":        claims.Iss,
-	})
-	return tokenObj.SignedString(priv)
-}
-
-// verifyJWT verifies a JWT with ECDSA P-256 for demonstration.
-func verifyJWT(tokenString string, pub *ecdsa.PublicKey) (*token.Claims, error) {
-	tokenObj, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if token.Method != jwt.SigningMethodES256 {
-			return nil, errors.New("unexpected signing method")
+func (s *DefaultRBACService) HasRole(requiredRoles []string, userRoles []string) bool {
+	roleSet := make(map[string]struct{}, len(userRoles))
+	for _, r := range userRoles {
+		roleSet[r] = struct{}{}
+	}
+	for _, req := range requiredRoles {
+		if _, ok := roleSet[req]; ok {
+			return true
 		}
-		return pub, nil
-	})
-	if err != nil || !tokenObj.Valid {
-		return nil, errors.New("invalid token")
 	}
-	claimsMap, ok := tokenObj.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, errors.New("invalid claims")
-	}
-	claims := &token.Claims{}
-	b, _ := json.Marshal(claimsMap)
-	json.Unmarshal(b, claims)
-	return claims, nil
+	return false
 }
