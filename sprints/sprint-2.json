@@ -9,7 +9,7 @@
     {
       "number": 17,
       "title": "Implement GCP CSPM Resource Scanner (MVP)",
-      "agentId": "Quinn",
+      "agentId": "quinn-architect",
       "outputPath": "src/scanner/providers/gcp.go",
       "contextPaths": [
         "docs/architecture/system-design-v1.md",
@@ -26,7 +26,7 @@
     {
       "number": 18,
       "title": "Implement Policy Engine Core Logic",
-      "agentId": "Quinn",
+      "agentId": "quinn-architect",
       "outputPath": "src/policy/engine.go",
       "contextPaths": [
         "docs/architecture/system-design-v1.md",
@@ -43,7 +43,7 @@
     {
       "number": 19,
       "title": "Integrate JWT-based Auth with Policy Engine Endpoints",
-      "agentId": "Jordan",
+      "agentId": "jordan-auth",
       "outputPath": "src/policy/handler.go",
       "contextPaths": [
         "src/auth/handler.go",
@@ -60,7 +60,7 @@
     {
       "number": 20,
       "title": "Security Review: Policy Engine Core & Auth Integration",
-      "agentId": "Casey",
+      "agentId": "casey-apisec",
       "outputPath": "docs/reviews/sprint-3-policy-engine-security-review.md",
       "contextPaths": [
         "src/policy/engine.go",
@@ -78,7 +78,7 @@
     {
       "number": 21,
       "title": "Test Plan: GCP Scanner & Policy Engine",
-      "agentId": "Taylor",
+      "agentId": "taylor-qa",
       "outputPath": "tests/plans/gcp_scanner_policy_engine_test_plan.md",
       "contextPaths": [
         "src/scanner/providers/gcp.go",
@@ -96,7 +96,7 @@
     {
       "number": 22,
       "title": "Compliance Mapping: GCP Scanner & Policy Engine",
-      "agentId": "Sam",
+      "agentId": "sam-compliance",
       "outputPath": "docs/compliance/sprint-3-gcp-policy-evidence.md",
       "contextPaths": [
         "src/scanner/providers/gcp.go",
@@ -112,7 +112,7 @@
     {
       "number": 23,
       "title": "Dashboard Widget: Policy Evaluation Results",
-      "agentId": "Avery",
+      "agentId": "avery-frontend",
       "outputPath": "frontend/components/PolicyEvaluationResults.tsx",
       "contextPaths": [
         "src/policy/handler.go",
@@ -128,7 +128,7 @@
     {
       "number": 24,
       "title": "Update CI/CD Pipeline for GCP Scanner & Policy Engine",
-      "agentId": "Morgan",
+      "agentId": "morgan-devops",
       "outputPath": "infra/cicd/gcp_scanner_policy_engine_pipeline.yaml",
       "contextPaths": [
         "src/scanner/providers/gcp.go",
