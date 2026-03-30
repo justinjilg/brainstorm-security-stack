@@ -1152,6 +1152,54 @@
       "route_reason": "thompson-sampling",
       "quality_score": "0.77",
       "latency_ms": 23410
+    },
+    {
+      "timestamp": "2026-03-30T20:39:46.359Z",
+      "agent": "quinn-architect",
+      "feature": "policy-engine",
+      "phase": "implement",
+      "status": "completed",
+      "summary": "Implemented: src/policy/engine.go (177 lines)",
+      "artifact": "src/policy/engine.go",
+      "format": "raw-code",
+      "build_status": "pass",
+      "cost": "$0.1766",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "thompson-sampling",
+      "quality_score": "0.74",
+      "latency_ms": 11671
+    },
+    {
+      "timestamp": "2026-03-30T20:39:49.437Z",
+      "agent": "quinn-architect",
+      "feature": "policy-engine",
+      "phase": "implement",
+      "status": "build-failed",
+      "summary": "Implemented: src/policy/types.go (177 lines)",
+      "artifact": "src/policy/types.go",
+      "format": "raw-code",
+      "build_status": "fail",
+      "cost": "$0.0000",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "semantic-cache",
+      "quality_score": "0.72",
+      "latency_ms": 479
+    },
+    {
+      "timestamp": "2026-03-30T20:39:52.315Z",
+      "agent": "quinn-architect",
+      "feature": "policy-engine",
+      "phase": "implement",
+      "status": "build-failed",
+      "summary": "Implemented: src/policy/loader.go (177 lines)",
+      "artifact": "src/policy/loader.go",
+      "format": "raw-code",
+      "build_status": "fail",
+      "cost": "$0.0000",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "semantic-cache",
+      "quality_score": "0.72",
+      "latency_ms": 319
     }
   ]
 }

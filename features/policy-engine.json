@@ -3,18 +3,64 @@
   "title": "Policy Evaluation Engine",
   "description": "Evaluate discovered assets against YAML-defined security rules. Map findings to CIS/SOC2/HIPAA controls. Deduplicate via pgvector embeddings.",
   "implementAgent": "quinn-architect",
-  "currentPhase": "implement",
-  "status": "active",
+  "currentPhase": "review",
+  "status": "blocked",
   "artifacts": {
     "spec": [
       "docs/specs/policy-engine.md"
     ],
     "design": [
       "docs/design/policy-engine.md"
+    ],
+    "implement": [
+      "src/policy/engine.go",
+      "src/policy/types.go",
+      "src/policy/loader.go"
     ]
   },
   "reviewResults": [],
-  "buildResults": [],
+  "buildResults": [
+    {
+      "passed": false,
+      "error": "# github.com/justinjilg/brainstorm-security-stack/src/policy\nvet: src/policy/engine.go:10:2: \"github.com/aws/aws-sdk-go-v2/service/s3\" imported and not used",
+      "attempt": 1
+    },
+    {
+      "passed": true,
+      "error": "",
+      "attempt": 2
+    },
+    {
+      "passed": false,
+      "error": "# github.com/justinjilg/brainstorm-security-stack/src/policy\nvet: src/policy/types.go:15:6: Asset redeclared in this block",
+      "attempt": 1
+    },
+    {
+      "passed": false,
+      "error": "# github.com/justinjilg/brainstorm-security-stack/src/policy\nvet: src/policy/types.go:14:6: Asset redeclared in this block",
+      "attempt": 2
+    },
+    {
+      "passed": false,
+      "error": "# github.com/justinjilg/brainstorm-security-stack/src/policy\nvet: src/policy/types.go:14:6: Asset redeclared in this block",
+      "attempt": 3
+    },
+    {
+      "passed": false,
+      "error": "# github.com/justinjilg/brainstorm-security-stack/src/policy\nvet: src/policy/loader.go:15:6: Asset redeclared in this block",
+      "attempt": 1
+    },
+    {
+      "passed": false,
+      "error": "# github.com/justinjilg/brainstorm-security-stack/src/policy\nvet: src/policy/loader.go:14:6: Asset redeclared in this block",
+      "attempt": 2
+    },
+    {
+      "passed": false,
+      "error": "# github.com/justinjilg/brainstorm-security-stack/src/policy\nvet: src/policy/loader.go:14:6: Asset redeclared in this block",
+      "attempt": 3
+    }
+  ],
   "outputPaths": {
     "spec": "docs/specs/policy-engine.md",
     "design": "docs/design/policy-engine.md",
