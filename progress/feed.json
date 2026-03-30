@@ -1055,6 +1055,30 @@
       "route_reason": "thompson-sampling",
       "quality_score": "0.86",
       "latency_ms": 20483
+    },
+    {
+      "timestamp": "2026-03-30T20:25:00.552Z",
+      "agent": "review-panel",
+      "feature": "aws-scanner",
+      "phase": "review",
+      "status": "rejected",
+      "summary": "Review: rejected (0/3 pass). ",
+      "artifact": "docs/reviews/aws-scanner-review.md",
+      "cost": "$0.1022",
+      "reviewers": [
+        {
+          "agent": "casey-apisec",
+          "verdict": "fail"
+        },
+        {
+          "agent": "taylor-qa",
+          "verdict": "fail"
+        },
+        {
+          "agent": "alex-crypto",
+          "verdict": "fail"
+        }
+      ]
     }
   ]
 }

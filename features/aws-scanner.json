@@ -3,8 +3,8 @@
   "title": "AWS Resource Scanner",
   "description": "Enumerate AWS resources (EC2, S3, IAM, RDS, Lambda) using read-only credentials. Normalize into common Asset structs. Concurrent scanning with worker pool.",
   "implementAgent": "quinn-architect",
-  "currentPhase": "review",
-  "status": "blocked",
+  "currentPhase": "test",
+  "status": "active",
   "artifacts": {
     "spec": [
       "docs/specs/aws-scanner.md"
@@ -15,9 +15,61 @@
     "implement": [
       "src/scanner/providers/aws.go",
       "src/scanner/types.go"
+    ],
+    "review": [
+      "docs/reviews/aws-scanner-review.md"
     ]
   },
-  "reviewResults": [],
+  "reviewResults": [
+    {
+      "reviewer": "casey-apisec",
+      "verdict": "fail",
+      "findings": [
+        "",
+        "## Findings",
+        "",
+        "1. **Nil pointer dereferences** - `scanEC2()` line 91 and `scanS3()` line 117 dereference pointers without nil checks:",
+        "   ```go",
+        "   AssetID: *instance.InstanceId,  // line 91",
+        "   AssetID: *bucket.Name,          // line 117",
+        "   ```",
+        "   AWS SDK can return nil for these fields when instances are terminating or buckets are being deleted."
+      ],
+      "cost": 0.10224
+    },
+    {
+      "reviewer": "taylor-qa",
+      "verdict": "fail",
+      "findings": [
+        "",
+        "## Findings",
+        "",
+        "1. **Nil pointer dereferences** - `scanEC2()` line 91 and `scanS3()` line 117 dereference pointers without nil checks:",
+        "   ```go",
+        "   AssetID: *instance.InstanceId,  // line 91",
+        "   AssetID: *bucket.Name,          // line 117",
+        "   ```",
+        "   AWS SDK can return nil for these fields when instances are terminating or buckets are being deleted."
+      ],
+      "cost": 0
+    },
+    {
+      "reviewer": "alex-crypto",
+      "verdict": "fail",
+      "findings": [
+        "",
+        "## Findings",
+        "",
+        "1. **Nil pointer dereferences** - `scanEC2()` line 91 and `scanS3()` line 117 dereference pointers without nil checks:",
+        "   ```go",
+        "   AssetID: *instance.InstanceId,  // line 91",
+        "   AssetID: *bucket.Name,          // line 117",
+        "   ```",
+        "   AWS SDK can return nil for these fields when instances are terminating or buckets are being deleted."
+      ],
+      "cost": 0
+    }
+  ],
   "buildResults": [
     {
       "passed": false,
