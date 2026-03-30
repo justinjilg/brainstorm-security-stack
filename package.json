@@ -1,0 +1,15 @@
+{
+  "name": "brainstorm-security-stack",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "orchestrate": "tsx scripts/orchestrate.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "undici": "^7.24.6"
+  }
+}

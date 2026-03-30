@@ -20,6 +20,20 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+
+// Proxy setup: Node's built-in fetch doesn't honor HTTPS_PROXY env var.
+// Install undici ProxyAgent globally so all fetch() calls go through the proxy.
+const _require = createRequire(import.meta.url);
+try {
+  const proxyUrl = process.env.HTTPS_PROXY ?? process.env.https_proxy;
+  if (proxyUrl) {
+    const { ProxyAgent, setGlobalDispatcher } = _require("undici");
+    setGlobalDispatcher(new ProxyAgent(proxyUrl));
+  }
+} catch {
+  // undici not available — fetch will attempt direct connection
+}
 
 const ROOT = resolve(process.cwd());
 const API_URL = process.env.BR_API_URL ?? "https://api.brainstormrouter.com";
@@ -188,6 +202,90 @@ Write the cryptographic requirements:
 6. Certificate lifecycle (issuance, rotation, revocation for inter-service mTLS)
 
 Reference Jordan's JWT design — if the signing algorithm or key rotation is wrong, say so. Reference River's attack tree — which crypto measures directly mitigate the identified threats? Be specific about algorithms, key sizes, and rotation intervals.`,
+    maxTokens: 4000,
+  },
+  {
+    number: 7,
+    title: "CI/CD pipeline design",
+    agentId: "morgan-devops",
+    outputPath: "docs/architecture/cicd-pipeline-v1.md",
+    contextPaths: ["docs/prds/cspm-v1.md", "docs/architecture/system-design-v1.md", "docs/security/crypto-requirements-v1.md"],
+    respondsTo: ["quinn-architect", "alex-crypto"],
+    prompt: `Sage wrote the PRD, Quinn designed the architecture, and Alex specified the cryptographic requirements. Read all three.
+
+Design the CI/CD pipeline for the Living Case Study security stack:
+1. Pipeline stages: build, test, security scan, staging deploy, production deploy
+2. Security controls in the pipeline (SAST, DAST, container scanning, secret detection)
+3. GitHub Actions workflow structure (key jobs, parallelization strategy)
+4. Artifact management (Docker images, Go binaries, versioning strategy)
+5. Environment promotion strategy (dev → staging → production)
+6. Secret handling in CI/CD — how to securely inject cloud credentials and API keys following Alex's crypto requirements
+7. Rollback strategy and deployment gates
+
+Reference Quinn's component architecture — how does the multi-component system (Scanner Engine, Policy Engine, etc.) affect the pipeline topology? Reference Alex's secrets management requirements — what specific pipeline controls satisfy those requirements? Be concrete with tooling choices (GitHub Actions, Trivy, Cosign, etc.).`,
+    maxTokens: 4000,
+  },
+  {
+    number: 8,
+    title: "Test strategy document",
+    agentId: "taylor-qa",
+    outputPath: "docs/testing/test-strategy-v1.md",
+    contextPaths: ["docs/prds/cspm-v1.md", "docs/architecture/system-design-v1.md", "docs/security/threat-model-v1.md", "docs/security/api-security-requirements-v1.md"],
+    respondsTo: ["sage-pm", "quinn-architect", "river-risk", "casey-apisec"],
+    prompt: `Sage wrote the PRD, Quinn designed the architecture, River produced the threat model, and Casey wrote the API security requirements. Read all four.
+
+Write the test strategy for the CSPM security stack:
+1. Test pyramid: unit / integration / end-to-end ratios and tooling for Go services
+2. Security testing approach: how do we test the controls Casey defined in the API security requirements?
+3. Test coverage targets per component (Scanner Engine, Policy Engine, Remediation Engine)
+4. Mutation testing strategy for security-critical paths
+5. Chaos engineering plan: what failure modes do we deliberately inject?
+6. Performance testing: baseline SLAs from Sage's PRD — how do we validate them?
+7. Compliance testing: how do we prove controls work for SOC2 / HIPAA auditors?
+8. CI gate thresholds: what quality bars block a deploy?
+
+Reference River's top 5 risks — every high-severity finding needs a specific test case. Reference Casey's API security requirements — every validation rule needs a negative test. If Quinn's architecture creates components that are hard to test in isolation, say so and propose the fix.`,
+    maxTokens: 4000,
+  },
+  {
+    number: 9,
+    title: "Compliance requirements matrix (SOC2, HIPAA)",
+    agentId: "sam-compliance",
+    outputPath: "docs/compliance/requirements-matrix-v1.md",
+    contextPaths: ["docs/prds/cspm-v1.md", "docs/architecture/system-design-v1.md", "docs/architecture/auth-design-v1.md", "docs/security/threat-model-v1.md", "docs/security/crypto-requirements-v1.md"],
+    respondsTo: ["sage-pm", "quinn-architect", "jordan-auth", "river-risk", "alex-crypto"],
+    prompt: `Sage wrote the PRD, Quinn designed the architecture, Jordan designed auth, River produced the threat model, and Alex specified crypto requirements. Read all five.
+
+Write the compliance requirements matrix:
+1. SOC2 Type II mapping: for each Trust Service Criterion (CC6, CC7, CC8, CC9), identify which specific system components fulfill it and what evidence is required
+2. HIPAA Technical Safeguard mapping (164.312): access control, audit controls, integrity, transmission security — mapped to specific technical controls in the architecture
+3. CIS Controls v8 coverage gaps: which of the top 18 controls are already addressed by the architecture, which are gaps?
+4. Evidence collection plan: what logs, metrics, and artifacts need to be preserved for audits, and how long?
+5. Control inheritance model: what does the MSP inherit from cloud providers (AWS, Azure, GCP) vs what must be implemented?
+6. Compliance risk register: controls currently unimplemented that create audit risk
+
+For each gap, name the specific technical control that's missing, which agent is responsible for implementing it, and the risk if it stays open. Reference Jordan's auth design for access control evidence. Reference Alex's crypto requirements for encryption evidence.`,
+    maxTokens: 4000,
+  },
+  {
+    number: 10,
+    title: "Dashboard wireframes (information architecture)",
+    agentId: "avery-frontend",
+    outputPath: "docs/design/dashboard-ia-v1.md",
+    contextPaths: ["docs/prds/cspm-v1.md", "docs/architecture/system-design-v1.md", "docs/security/threat-model-v1.md"],
+    respondsTo: ["sage-pm", "quinn-architect", "river-risk"],
+    prompt: `Sage wrote the PRD with user personas, Quinn designed the system architecture, and River produced the threat model. Read all three.
+
+Design the information architecture for the MSP operator dashboard:
+1. Primary navigation structure: what are the top-level views and why?
+2. CSPM overview screen: what does an operator see first when they log in? (layout in ASCII/text wireframe)
+3. Findings view: how do we surface misconfiguration findings with severity, affected resource, and remediation action? (ASCII wireframe)
+4. Compliance scorecard view: how do MSP operators see their clients' SOC2/HIPAA posture at a glance?
+5. Alert timeline: real-time event stream for critical findings
+6. Multi-tenant navigation: how does an MSP operator switch between managed client environments?
+7. Component data requirements: for each screen, what API endpoints and data shapes are needed from Quinn's backend?
+
+Reference Sage's user personas — the MSP operator needs different views than the security engineer or compliance officer. Reference River's top 5 risks — the highest-severity findings need prominent surface area. If Quinn's architecture doesn't expose the data a screen needs, flag it as a backend gap. Use ASCII art for wireframes where helpful.`,
     maxTokens: 4000,
   },
 ];

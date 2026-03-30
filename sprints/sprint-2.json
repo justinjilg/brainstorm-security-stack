@@ -9,7 +9,7 @@
     {
       "number": 11,
       "title": "Implement AWS CSPM Resource Scanner (MVP)",
-      "agentId": "Quinn",
+      "agentId": "quinn-architect",
       "outputPath": "src/scanner/providers/aws.go",
       "contextPaths": [
         "docs/prds/cspm-v1.md",
@@ -17,8 +17,8 @@
         "docs/security/threat-model-v1.md"
       ],
       "respondsTo": [
-        "Sage",
-        "River"
+        "sage-pm",
+        "river-risk"
       ],
       "prompt": "Implement the initial AWS CSPM resource scanner in Go, following the system architecture and requirements from the PRD. Focus on discovering EC2 and S3 resources as an MVP. Ensure the code aligns with the threat model and architectural boundaries defined in ADR-001.",
       "maxTokens": 4000
@@ -26,7 +26,7 @@
     {
       "number": 12,
       "title": "Implement Authentication Handler (JWT-based)",
-      "agentId": "Jordan",
+      "agentId": "jordan-auth",
       "outputPath": "src/auth/handler.go",
       "contextPaths": [
         "docs/architecture/auth-design-v1.md",
@@ -34,8 +34,8 @@
         "docs/security/api-security-requirements-v1.md"
       ],
       "respondsTo": [
-        "Alex",
-        "Casey"
+        "alex-crypto",
+        "casey-apisec"
       ],
       "prompt": "Implement the authentication handler in Go, supporting JWT issuance and verification as specified in the authentication design and cryptographic requirements. Ensure input validation and error handling per API security requirements.",
       "maxTokens": 4000
@@ -43,14 +43,14 @@
     {
       "number": 13,
       "title": "Define Policy Engine Schema (JSON/YAML)",
-      "agentId": "Quinn",
+      "agentId": "quinn-architect",
       "outputPath": "src/policy/schema.yaml",
       "contextPaths": [
         "docs/prds/cspm-v1.md",
         "docs/architecture/system-design-v1.md"
       ],
       "respondsTo": [
-        "Sage"
+        "sage-pm"
       ],
       "prompt": "Design and document the schema for CSPM policy definitions (in JSON or YAML). The schema should support resource selectors, conditions, and remediation guidance, and be easily extensible for future cloud providers. Reference the PRD and system design.",
       "maxTokens": 4000
@@ -58,7 +58,7 @@
     {
       "number": 14,
       "title": "Security Review: Authentication Handler & AWS Scanner",
-      "agentId": "Casey",
+      "agentId": "casey-apisec",
       "outputPath": "docs/reviews/sprint-2-auth-api-security-review.md",
       "contextPaths": [
         "src/auth/handler.go",
@@ -67,8 +67,8 @@
         "docs/security/threat-model-v1.md"
       ],
       "respondsTo": [
-        "Jordan",
-        "Quinn"
+        "jordan-auth",
+        "quinn-architect"
       ],
       "prompt": "Perform a security review of the new authentication handler and AWS scanner implementation. Evaluate adherence to API security requirements, input validation, and threat model coverage. Document findings and recommendations.",
       "maxTokens": 6000
@@ -76,7 +76,7 @@
     {
       "number": 15,
       "title": "Test Plan: AWS Scanner & Auth Handler",
-      "agentId": "Taylor",
+      "agentId": "taylor-qa",
       "outputPath": "tests/plans/aws_scanner_auth_handler_test_plan.md",
       "contextPaths": [
         "src/scanner/providers/aws.go",
@@ -84,8 +84,8 @@
         "docs/testing/test-strategy-v1.md"
       ],
       "respondsTo": [
-        "Quinn",
-        "Jordan"
+        "quinn-architect",
+        "jordan-auth"
       ],
       "prompt": "Draft a detailed test plan for the AWS scanner and authentication handler. Specify unit, integration, and edge case tests, referencing the overall test strategy. Highlight test coverage for error handling and security boundaries.",
       "maxTokens": 4000
@@ -93,7 +93,7 @@
     {
       "number": 16,
       "title": "Compliance Mapping: Authentication & AWS Scanner",
-      "agentId": "Sam",
+      "agentId": "sam-compliance",
       "outputPath": "docs/compliance/sprint-2-auth-scanner-evidence.md",
       "contextPaths": [
         "src/auth/handler.go",
@@ -101,8 +101,8 @@
         "docs/compliance/requirements-matrix-v1.md"
       ],
       "respondsTo": [
-        "Jordan",
-        "Quinn"
+        "jordan-auth",
+        "quinn-architect"
       ],
       "prompt": "Review the authentication handler and AWS scanner implementations against the compliance requirements matrix (SOC2, HIPAA). Document evidence of controls, gaps, and recommendations for audit readiness.",
       "maxTokens": 4000
@@ -110,14 +110,14 @@
     {
       "number": 17,
       "title": "Build Dashboard Widget: AWS Resource Inventory",
-      "agentId": "Avery",
+      "agentId": "avery-frontend",
       "outputPath": "frontend/components/AwsResourceInventory.tsx",
       "contextPaths": [
         "src/scanner/providers/aws.go",
         "docs/design/dashboard-ia-v1.md"
       ],
       "respondsTo": [
-        "Quinn"
+        "quinn-architect"
       ],
       "prompt": "Implement a Next.js dashboard widget to display discovered AWS resources (EC2, S3) as reported by the scanner. Follow the dashboard information architecture and wireframes. Include loading/error states and mock data for now.",
       "maxTokens": 4000
@@ -125,7 +125,7 @@
     {
       "number": 18,
       "title": "Update CI/CD Pipeline for AWS Scanner & Auth Handler",
-      "agentId": "Morgan",
+      "agentId": "morgan-devops",
       "outputPath": "infra/cicd/aws_scanner_auth_handler_pipeline.yaml",
       "contextPaths": [
         "src/scanner/providers/aws.go",
@@ -133,8 +133,8 @@
         "docs/architecture/cicd-pipeline-v1.md"
       ],
       "respondsTo": [
-        "Quinn",
-        "Jordan"
+        "quinn-architect",
+        "jordan-auth"
       ],
       "prompt": "Update the CI/CD pipeline configuration to build, test, and lint the new AWS scanner and authentication handler components. Ensure pipeline steps align with the CI/CD pipeline design and enable fast feedback for these modules.",
       "maxTokens": 4000
