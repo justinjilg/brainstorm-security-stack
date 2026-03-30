@@ -3,7 +3,7 @@
   "title": "JWT Authentication Handler",
   "description": "Issue and verify JWTs for multi-tenant access. ECDSA P-256 signing, RBAC with MSP/security/compliance roles, short-lived access tokens, refresh rotation. ALL types, interfaces, and logic must be in a SINGLE Go file with NO imports from example.com or yourmodule.",
   "implementAgent": "jordan-auth",
-  "currentPhase": "test",
+  "currentPhase": "compliance",
   "status": "active",
   "artifacts": {
     "spec": [
@@ -23,6 +23,9 @@
       "docs/reviews/auth-handler-review.md",
       "docs/reviews/auth-handler-review.md",
       "docs/reviews/auth-handler-review.md"
+    ],
+    "test": [
+      "src/auth/auth_test.go"
     ]
   },
   "reviewResults": [
