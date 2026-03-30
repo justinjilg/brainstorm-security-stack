@@ -3,7 +3,7 @@
   "title": "JWT Authentication Handler",
   "description": "Issue and verify JWTs for multi-tenant access. ECDSA P-256 signing, RBAC with MSP/security/compliance roles, short-lived access tokens, refresh rotation. ALL types, interfaces, and logic must be in a SINGLE Go file with NO imports from example.com or yourmodule.",
   "implementAgent": "jordan-auth",
-  "currentPhase": "review",
+  "currentPhase": "implement",
   "status": "active",
   "artifacts": {
     "spec": [
@@ -14,9 +14,61 @@
     ],
     "implement": [
       "src/auth/auth.go"
+    ],
+    "review": [
+      "docs/reviews/auth-handler-review.md"
     ]
   },
-  "reviewResults": [],
+  "reviewResults": [
+    {
+      "reviewer": "casey-apisec",
+      "verdict": "critical",
+      "findings": [
+        "",
+        "## Findings",
+        "",
+        "1. **RefreshTokenHandler uses wrong verification method** (line 119): `h.TokenService.VerifyAccessToken(refreshToken, tenantID)` — you're verifying a refresh token with the access token verification method. This is fundamentally broken.",
+        "",
+        "2. **No request body size limits** on any handler. `json.NewDecoder(r.Body).Decode(&req)` will happily consume gigabytes of JSON, opening you to trivial DoS.",
+        "",
+        "3. **TokenRequest.Custom accepts arbitrary data** (line 38) without validation, then blindly merges it into JWT claims (lines 69-71). I can inject reserved claims like `exp`, `iat`, or `iss` to manipulate token behavior.",
+        ""
+      ],
+      "cost": 0.107625
+    },
+    {
+      "reviewer": "taylor-qa",
+      "verdict": "critical",
+      "findings": [
+        "",
+        "## Findings",
+        "",
+        "1. **RefreshTokenHandler uses wrong verification method** (line 119): `h.TokenService.VerifyAccessToken(refreshToken, tenantID)` — you're verifying a refresh token with the access token verification method. This is fundamentally broken.",
+        "",
+        "2. **No request body size limits** on any handler. `json.NewDecoder(r.Body).Decode(&req)` will happily consume gigabytes of JSON, opening you to trivial DoS.",
+        "",
+        "3. **TokenRequest.Custom accepts arbitrary data** (line 38) without validation, then blindly merges it into JWT claims (lines 69-71). I can inject reserved claims like `exp`, `iat`, or `iss` to manipulate token behavior.",
+        ""
+      ],
+      "cost": 0
+    },
+    {
+      "reviewer": "alex-crypto",
+      "verdict": "critical",
+      "findings": [
+        "",
+        "## Findings",
+        "",
+        "1. **RefreshTokenHandler uses wrong verification method** (line 119): `h.TokenService.VerifyAccessToken(refreshToken, tenantID)` — you're verifying a refresh token with the access token verification method. This is fundamentally broken.",
+        "",
+        "2. **No request body size limits** on any handler. `json.NewDecoder(r.Body).Decode(&req)` will happily consume gigabytes of JSON, opening you to trivial DoS.",
+        "",
+        "3. **TokenRequest.Custom accepts arbitrary data** (line 38) without validation, then blindly merges it into JWT claims (lines 69-71). I can inject reserved claims like `exp`, `iat`, or `iss` to manipulate token behavior.",
+        ""
+      ],
+      "cost": 0
+    }
+  ],
   "buildResults": [
     {
       "passed": false,
