@@ -470,30 +470,68 @@ async function advanceSprint(): Promise<SprintTask | null> {
     .filter(Boolean)
     .join("\n");
 
+  // Determine sprint number from existing sprint files
+  const sprintFiles = existsSync(join(ROOT, "sprints"))
+    ? readdirSync(join(ROOT, "sprints")).filter(f => f.match(/^sprint-\d+\.json$/))
+    : [];
+  const nextSprintNum = sprintFiles.length + 2; // Sprint 1 is hardcoded, so first generated is 2
+  const prevSprintNum = nextSprintNum - 1;
+
+  // Gather ALL artifacts (not just Sprint 1)
+  const allTasksForContext = [...SPRINT_1_TASKS, ...loadDynamicSprint()];
+  const allArtifactsList = allTasksForContext
+    .map(t => {
+      const p = join(ROOT, t.outputPath);
+      if (!existsSync(p)) return "";
+      return `- ${t.outputPath} (by ${AGENTS[t.agentId]?.displayName ?? t.agentId}): ${t.title}`;
+    })
+    .filter(Boolean)
+    .join("\n");
+
   const jwt = await getAgentJwt("sage-pm");
   const result = await callBR(
     jwt,
     "openai/gpt-4.1",
-    `You are Sage, the Product Manager for the Living Case Study. Sprint 1 (Discovery + Architecture) is complete. You need to define Sprint 2.
+    `You are Sage, the Product Manager for the Living Case Study — a public project where 10 AI agents build a complete MSP Security Stack (CNAPP + EDR + SIEM + SOAR) from scratch.
 
-You have 10 agents: Quinn (Architect), Casey (API Security), Alex (Crypto), Jordan (Auth), River (Risk), Sam (Compliance), Morgan (DevOps), Taylor (QA), Avery (Frontend), and yourself (PM).
+Your team:
+- Quinn (Architect) — system design, ADRs, component boundaries
+- Casey (API Security) — API security reviews, input validation, rate limiting
+- Alex (Crypto) — cryptographic requirements, key management, TLS
+- Jordan (Auth) — authentication, authorization, RBAC, session management
+- River (Risk) — threat models, STRIDE analysis, risk scoring
+- Sam (Compliance) — SOC2/HIPAA/FedRAMP mapping, evidence collection, audit trails
+- Morgan (DevOps) — CI/CD, Dockerfiles, deployment configs, infra-as-code
+- Taylor (QA) — test plans, test code, fuzzing strategies, edge cases
+- Avery (Frontend) — Next.js dashboard components, alert views, compliance dashboards
+- Sage (you) — PRDs, sprint planning, acceptance criteria, scope management
 
-Sprint 1 produced: a CSPM PRD, system architecture, auth design, threat model, API security requirements, and crypto requirements.
+Sprint ${prevSprintNum} is now complete.`,
+    `Define Sprint ${nextSprintNum} tasks. You MUST include a MIX of task types — not just "write code." A real SDLC sprint includes:
 
-Sprint 2 should be: Implementation. The team starts building code based on the architecture and security designs from Sprint 1.`,
-    `Based on the Sprint 1 artifacts below, define Sprint 2 tasks. Output ONLY valid JSON — an array of task objects with these fields:
-- number (integer starting at 7)
-- title (string)
-- agentId (string — must be one of: quinn-architect, casey-apisec, alex-crypto, jordan-auth, river-risk, sam-compliance, morgan-devops, taylor-qa, sage-pm, avery-frontend)
-- outputPath (string — path like "src/scanner/main.go" or "docs/reviews/arch-review.md")
-- contextPaths (string array — Sprint 1 artifacts this task should read)
-- respondsTo (string array — agent IDs whose work this task builds on)
-- prompt (string — detailed task prompt for the agent)
-- maxTokens (integer — typically 4000)
+1. IMPLEMENTATION tasks (2-3): agents writing actual code (Go files, configs, schemas)
+2. SECURITY REVIEW tasks (1-2): Casey or Alex reviewing code/designs from this or prior sprints
+3. TEST tasks (1): Taylor writing test plans or test code for what was built
+4. COMPLIANCE tasks (1): Sam auditing artifacts against frameworks, writing evidence
+5. FRONTEND tasks (1): Avery building dashboard components for new features
+6. DEVOPS tasks (0-1): Morgan setting up CI/CD, Docker, or deployment configs
 
-Define 6-8 tasks that advance the project from architecture to working code. Each task should build on prior agents' work. Output ONLY the JSON array, no markdown fences, no explanation.
+Every task MUST reference prior artifacts via contextPaths. Every task MUST list which agents' work it responds to via respondsTo. This is how agents talk to each other — by reading and responding to each other's work.
 
-Sprint 1 artifacts summary:\n${allArtifacts}`,
+Artifacts built so far:
+${allArtifactsList}
+
+Output ONLY valid JSON — an array of task objects:
+- number (integer, continuing from the highest existing task number + 1)
+- title (string — specific, not generic)
+- agentId (string — exact agent ID from the list above)
+- outputPath (string — e.g. "src/scanner/providers/aws.go" or "docs/reviews/sprint-2-security-review.md" or "tests/scanner/policy_engine_test.go")
+- contextPaths (string array — paths to prior artifacts this agent should read)
+- respondsTo (string array — agent IDs whose work this task builds on or reviews)
+- prompt (string — detailed, specific task prompt telling the agent exactly what to produce, referencing other agents' work by name)
+- maxTokens (integer — 4000 for code/docs, 6000 for reviews)
+
+Define 6-8 tasks. Output ONLY the JSON array — no markdown fences, no explanation, no commentary.`,
     6000,
   );
 
