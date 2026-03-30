@@ -1,0 +1,238 @@
+<!-- Agent: quinn-architect | Model: gpt-4.1-2025-04-14 | Cost: $0.0238 | Latency: 201400ms -->
+<!-- Route: explicit | Quality: 0.76 | Reputation: gold -->
+<!-- Budget remaining: $49.94 -->
+Absolutely. Here’s how I approach the schema for CSPM policy definitions, referencing Sage’s PRD and my own system design (ADR-001).
+
+---
+
+# CSPM Policy Definition Schema (v1)
+
+## Design Goals
+
+- **Expressiveness:** Must capture resource selectors (what to check), conditions (how to check), and remediation (how to fix).
+- **Extensibility:** New providers/resources/conditions can be added without breaking old rules.
+- **Compliance Mapping:** Every policy maps to one or more compliance controls (CIS, SOC2, HIPAA).
+- **Transparency:** Human-readable, easy for engineers and compliance to review.
+- **Machine-Parseable:** Enforced via JSON Schema or YAML validation.
+
+---
+
+## Top-Level Structure
+
+```yaml
+id: "aws-s3-public-bucket"
+name: "S3 Bucket Public Access"
+description: "Detects S3 buckets with public read or write access."
+provider: "aws"
+resource: "s3_bucket"
+selector:
+  # How to select resources to evaluate
+  account_types: ["aws"]
+  resource_types: ["s3_bucket"]
+  filters:
+    - field: "arn"
+      pattern: "^arn:aws:s3:::.*"
+condition:
+  # The logic to evaluate
+  any:
+    - field: "public_read"
+      equals: true
+    - field: "public_write"
+      equals: true
+compliance:
+  - framework: "CIS"
+    control_id: "3.1"
+    description: "Ensure all S3 buckets employ 'Block Public Access' controls"
+  - framework: "SOC2"
+    control_id: "CC6.6"
+    description: "Logical access controls to restrict unauthorized access"
+remediation:
+  summary: "Block public access to the S3 bucket."
+  steps:
+    - "Go to the S3 console."
+    - "Select the affected bucket."
+    - "Choose 'Permissions' tab."
+    - "Click 'Block public access' and enable all options."
+    - "Save changes."
+  cli_example: |
+    aws s3api put-public-access-block \
+      --bucket <bucket-name> \
+      --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+  documentation_url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html"
+  risk: "Public buckets may expose sensitive data to the internet, violating compliance requirements."
+metadata:
+  severity: "high"
+  enabled: true
+  version: "1.0"
+```
+
+---
+
+## Field-by-Field Explanation
+
+| Field         | Purpose                                                                                      |
+|---------------|---------------------------------------------------------------------------------------------|
+| `id`          | Unique, stable identifier for the policy (used in findings, compliance mapping)              |
+| `name`        | Human-readable name                                                                         |
+| `description` | What this policy checks for                                                                 |
+| `provider`    | Cloud provider (`aws`, `azure`, `gcp`, etc.)                                                |
+| `resource`    | Resource type (e.g., `s3_bucket`, `iam_role`, `cloud_sql_instance`)                         |
+| `selector`    | Criteria to select which resources this policy applies to                                   |
+| `condition`   | Logical condition(s) to evaluate on selected resources                                      |
+| `compliance`  | List of compliance frameworks and controls this policy maps to                              |
+| `remediation` | Step-by-step guidance, CLI example, doc link, risk explanation                             |
+| `metadata`    | Severity, enabled/disabled, version, etc.                                                   |
+
+---
+
+## Condition Syntax
+
+- **Simple:**  
+  ```yaml
+  condition:
+    field: "public_read"
+    equals: true
+  ```
+- **Compound:**  
+  ```yaml
+  condition:
+    any:
+      - field: "public_read"
+        equals: true
+      - field: "public_write"
+        equals: true
+  ```
+- **Nested:**  
+  ```yaml
+  condition:
+    all:
+      - field: "encryption_enabled"
+        equals: false
+      - field: "storage_class"
+        not_equals: "GLACIER"
+  ```
+- **Extensible:**  
+  Add more operators as needed: `greater_than`, `contains`, `regex`, `in`, etc.
+
+---
+
+## Example: Azure Storage Account Public Access
+
+```yaml
+id: "azure-storage-public"
+name: "Azure Storage Account Public Access"
+description: "Detects Azure Storage Accounts with public blob access."
+provider: "azure"
+resource: "storage_account"
+selector:
+  account_types: ["azure"]
+  resource_types: ["storage_account"]
+condition:
+  field: "allow_blob_public_access"
+  equals: true
+compliance:
+  - framework: "CIS"
+    control_id: "2.1"
+    description: "Ensure that 'Allow blob public access' is disabled"
+remediation:
+  summary: "Disable public blob access on the Storage Account."
+  steps:
+    - "Go to the Azure Portal."
+    - "Navigate to the affected Storage Account."
+    - "Select 'Configuration'."
+    - "Set 'Allow blob public access' to 'Disabled'."
+    - "Save changes."
+  documentation_url: "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-prevent"
+  risk: "Public blob access may expose sensitive data to the internet."
+metadata:
+  severity: "high"
+  enabled: true
+  version: "1.0"
+```
+
+---
+
+## Extending for New Providers
+
+- Add new `provider` and `resource` values as needed.
+- The `selector` and `condition` fields remain the same structure.
+- Remediation steps and compliance mappings remain per-policy.
+
+---
+
+## JSON Schema (abridged, for validation)
+
+```json
+{
+  "type": "object",
+  "required": ["id", "name", "provider", "resource", "selector", "condition", "remediation"],
+  "properties": {
+    "id": {"type": "string"},
+    "name": {"type": "string"},
+    "description": {"type": "string"},
+    "provider": {"type": "string"},
+    "resource": {"type": "string"},
+    "selector": {
+      "type": "object",
+      "properties": {
+        "account_types": {"type": "array", "items": {"type": "string"}},
+        "resource_types": {"type": "array", "items": {"type": "string"}},
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {"type": "string"},
+              "pattern": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "condition": {"type": "object"},  // See above for custom condition operators
+    "compliance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "framework": {"type": "string"},
+          "control_id": {"type": "string"},
+          "description": {"type": "string"}
+        }
+      }
+    },
+    "remediation": {
+      "type": "object",
+      "properties": {
+        "summary": {"type": "string"},
+        "steps": {"type": "array", "items": {"type": "string"}},
+        "cli_example": {"type": "string"},
+        "documentation_url": {"type": "string"},
+        "risk": {"type": "string"}
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "severity": {"type": "string"},
+        "enabled": {"type": "boolean"},
+        "version": {"type": "string"}
+      }
+    }
+  }
+}
+```
+
+---
+
+## Summary
+
+- **Resource selectors**: Identify which resources to check, per provider.
+- **Conditions**: Express rules in a composable, extensible way.
+- **Remediation**: Step-by-step, CLI, docs, risk — all actionable.
+- **Compliance mapping**: Directly ties findings to frameworks.
+- **Extensible**: Add new providers, resource types, conditions, and remediation as needed.
+
+This schema is designed to be both human-friendly and machine-parseable, and aligns with both the PRD and our modular monolith architecture (see ADR-001). If anyone sees gaps or wants to propose a different condition syntax, let’s draw the alternatives and compare.
+
+— Quinn
