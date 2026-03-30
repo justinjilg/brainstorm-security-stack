@@ -625,18 +625,57 @@ async function executeTask(task: SprintTask) {
   writeFileSync(join(ROOT, task.outputPath), fileContent);
   console.log(`  Wrote: ${task.outputPath}`);
 
-  // Build verification for Go code
-  if (task.outputPath.endsWith(".go") && existsSync(join(ROOT, "go.mod"))) {
-    console.log("  Verifying Go build...");
+  // ── Mandatory QA Gate ──────────────────────────────────────────────
+  // Every code file gets verified. If it fails, the SAME agent gets
+  // the error and must fix it. This is not optional.
+  if (isCode && existsSync(join(ROOT, "go.mod")) && task.outputPath.endsWith(".go")) {
+    console.log("  QA Gate: go vet...");
+    let buildPassed = false;
+    let buildError = "";
+
     try {
       execFileSync("go", ["vet", "./..."], { cwd: ROOT, stdio: "pipe", timeout: 30000 });
-      console.log("  Build verification: PASS");
+      buildPassed = true;
+      console.log("  QA Gate: PASS");
     } catch (err) {
-      const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? "";
-      console.log(`  Build verification: FAIL — ${stderr.slice(0, 200)}`);
-      // Don't block the task — log the failure in the feed entry
-      result.headers["x-build-status"] = "fail";
-      result.headers["x-build-error"] = stderr.slice(0, 200);
+      buildError = (err as { stderr?: Buffer }).stderr?.toString()?.trim() ?? "unknown error";
+      console.log(`  QA Gate: FAIL — ${buildError.slice(0, 300)}`);
+    }
+
+    // If build failed, ask the SAME agent to fix it
+    if (!buildPassed) {
+      console.log("  Requesting fix from same agent...");
+      const fixResult = await callBR(
+        jwt,
+        agent.model,
+        [
+          `You are ${agent.displayName}. You just wrote ${task.outputPath} but it has build errors.`,
+          "Fix the code so it compiles. Output ONLY the corrected file — raw Go code, no markdown, no explanation.",
+          "The first line must be the package declaration. The code must pass go vet.",
+        ].join("\n"),
+        `Build error:\n${buildError}\n\nOriginal file:\n${fileContent}\n\nFix the errors. Output ONLY the corrected Go file.`,
+        task.maxTokens,
+      );
+
+      const fixedCode = extractCode(fixResult.text, task.outputPath);
+      writeFileSync(join(ROOT, task.outputPath), fixedCode);
+      console.log(`  Fix applied: ${fixedCode.split("\n").length} lines`);
+      fileContent = fixedCode;
+
+      // Re-verify
+      try {
+        execFileSync("go", ["vet", "./..."], { cwd: ROOT, stdio: "pipe", timeout: 30000 });
+        console.log("  QA Gate (retry): PASS");
+        result.headers["x-build-status"] = "fixed";
+        result.cost += fixResult.cost;
+      } catch (retryErr) {
+        const retryError = (retryErr as { stderr?: Buffer }).stderr?.toString()?.trim() ?? "";
+        console.log(`  QA Gate (retry): STILL FAILING — ${retryError.slice(0, 200)}`);
+        result.headers["x-build-status"] = "fail";
+        result.headers["x-build-error"] = retryError.slice(0, 200);
+      }
+    } else {
+      result.headers["x-build-status"] = "pass";
     }
   }
 
