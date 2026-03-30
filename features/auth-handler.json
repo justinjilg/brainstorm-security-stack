@@ -4,7 +4,7 @@
   "description": "Issue and verify JWTs for multi-tenant access. ECDSA P-256 signing, RBAC with MSP/security/compliance roles, short-lived access tokens, refresh rotation. ALL types, interfaces, and logic must be in a SINGLE Go file with NO imports from example.com or yourmodule.",
   "implementAgent": "jordan-auth",
   "currentPhase": "integrate",
-  "status": "active",
+  "status": "completed",
   "artifacts": {
     "spec": [
       "docs/specs/auth-handler.md"
@@ -29,6 +29,9 @@
     ],
     "compliance": [
       "docs/compliance/auth-handler-evidence.md"
+    ],
+    "integrate": [
+      "infra/ci/auth-handler.yaml"
     ]
   },
   "reviewResults": [

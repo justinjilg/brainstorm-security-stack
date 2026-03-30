@@ -980,6 +980,21 @@
       "route_reason": "explicit",
       "quality_score": "0.70",
       "latency_ms": 18629
+    },
+    {
+      "timestamp": "2026-03-30T17:23:51.870Z",
+      "agent": "morgan-devops",
+      "feature": "auth-handler",
+      "phase": "integrate",
+      "status": "completed",
+      "summary": "Integration: infra/ci/auth-handler.yaml",
+      "artifact": "infra/ci/auth-handler.yaml",
+      "format": "yaml",
+      "cost": "$0.0035",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "thompson-sampling",
+      "quality_score": "0.84",
+      "latency_ms": 3911
     }
   ]
 }
