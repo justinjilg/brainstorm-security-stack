@@ -574,6 +574,20 @@
       "reputation_tier": "gold",
       "latency_ms": 227948,
       "budget_remaining": 49.93
+    },
+    {
+      "timestamp": "2026-03-30T16:31:10.880Z",
+      "agent": "sage-pm",
+      "feature": "auth-handler",
+      "phase": "spec",
+      "status": "completed",
+      "summary": "Spec complete: JWT Authentication Handler",
+      "artifact": "docs/specs/auth-handler.md",
+      "cost": "$0.0000",
+      "model": "gpt-4o-2024-11-20",
+      "route_reason": "semantic-cache",
+      "quality_score": "0.84",
+      "latency_ms": 394
     }
   ]
 }
