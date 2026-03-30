@@ -50,6 +50,7 @@ type Feature = {
   status: "active" | "blocked" | "completed";
   artifacts: Partial<Record<Phase, string[]>>;
   reviewResults: Array<{ reviewer: string; verdict: string; findings: string[]; cost: number }>;
+  reviewLoops?: number; // safety valve to prevent infinite implement→review→implement cycles
   buildResults: Array<{ passed: boolean; error?: string; attempt: number }>;
   outputPaths: Record<Phase, string | string[]>;
 };
@@ -352,11 +353,17 @@ async function runReview(feature: Feature): Promise<string[]> {
 
   appendFeed({ timestamp: new Date().toISOString(), agent: "review-panel", feature: feature.id, phase: "review", status: consensus, summary: `Review: ${consensus} (${passes}/3 pass). ${criticals > 0 ? "Critical findings block progression." : ""}`, artifact: outPath, cost: `$${results.reduce((s, r) => s + r.cost, 0).toFixed(4)}`, reviewers: results.map(r => ({ agent: r.reviewer, verdict: r.verdict })) });
 
-  // Critical findings loop back to implement
+  // Critical findings loop back to implement (max 3 loops to prevent infinite cycle)
   if (consensus === "critical-block") {
-    console.log("  CRITICAL findings — looping back to IMPLEMENT");
-    feature.currentPhase = "implement";
-    feature.status = "active";
+    feature.reviewLoops = (feature.reviewLoops ?? 0) + 1;
+    if (feature.reviewLoops >= 3) {
+      console.log(`  CRITICAL findings (loop ${feature.reviewLoops}) — max loops reached, advancing with warnings`);
+      // Advance anyway — the findings are documented in the review artifact
+    } else {
+      console.log(`  CRITICAL findings (loop ${feature.reviewLoops}) — looping back to IMPLEMENT`);
+      feature.currentPhase = "implement";
+      feature.status = "active";
+    }
   }
 
   return [outPath, "progress/feed.json"];

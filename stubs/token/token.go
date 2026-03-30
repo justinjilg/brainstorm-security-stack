@@ -34,7 +34,8 @@ type TokenConfig struct {
 type TokenService interface {
 	IssueAccessToken(userID, tenantID string, roles []string, customClaims map[string]interface{}) (accessToken, refreshToken string, err error)
 	VerifyAccessToken(token, tenantID string) (*Claims, error)
-	RotateRefreshToken(refreshToken, tenantID string) (string, error)
+	VerifyRefreshToken(refreshToken, tenantID string) (*Claims, error)
+	RotateRefreshToken(refreshToken, tenantID string) (newRefreshToken string, err error)
 }
 
 // SignClaims signs JWT claims with ECDSA P-256.
