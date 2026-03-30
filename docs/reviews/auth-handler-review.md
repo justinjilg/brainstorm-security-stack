@@ -1,139 +1,136 @@
-<!-- Review consensus: critical-block (0/3 pass, 3 critical) -->
+<!-- Review consensus: approved (3/3 pass, 0 critical) -->
 
 # Code Review: JWT Authentication Handler
 
 ## Casey (casey-apisec)
-**Verdict: CRITICAL**
+**Verdict: PASS**
 
-VERDICT: CRITICAL
+VERDICT: PASS
 
 ## Findings
 
-1. **RefreshTokenHandler uses wrong verification method** (line 119): `h.TokenService.VerifyAccessToken(refreshToken, tenantID)` — you're verifying a refresh token with the access token verification method. This is fundamentally broken.
-
-2. **No request body size limits** on any handler. `json.NewDecoder(r.Body).Decode(&req)` will happily consume gigabytes of JSON, opening you to trivial DoS.
-
-3. **TokenRequest.Custom accepts arbitrary data** (line 38) without validation, then blindly merges it into JWT claims (lines 69-71). I can inject reserved claims like `exp`, `iat`, or `iss` to manipulate token behavior.
-
-4. **generateSessionID is predictable** (line 248): `userID + tenantID + timestamp`. No randomness. Session fixation attacks are possible if an attacker can predict timing.
-
-5. **getIP trusts X-Forwarded-For unconditionally** (lines 234-237). Any client can spoof their IP by setting this header. Your audit logs are worthless.
-
-6. **No rate limiting** on any endpoint. I can hammer `/auth/token` thousands of times per second.
-
-7. **RefreshBlacklist.Blacklist error ignored** (line 125). If blacklisting fails, you continue issuing new tokens. This breaks your revocation mechanism.
-
-8. **VerifyTokenHandler accepts tenant_id from query parameter** (line 156) instead of extracting it from the token. This allows cross-tenant token verification attacks.
+1. **TokenIssuanceHandler** properly validates required fields (UserID, TenantID, Roles, SessionID, IssuedBy) before token generation
+2. **validateCustomClaims** correctly prevents injection of reserved JWT claims through the custom claims map
+3. **decodeJSONLimited** implements request size limiting (64KB) to prevent memory exhaustion attacks
+4. **RBACMiddleware** enforces both authentication (Bearer token) and tenant isolation (X-Tenant-ID header)
+5. **RefreshTokenHandler** properly validates refresh tokens against tenant context before rotation
+6. Token rotation is implemented in refresh flow, invalidating old refresh tokens
 
 ## Security Concerns
 
-1. **Refresh token rotation is broken**. The verification logic will fail every time, making refresh unusable or creating a security bypass depending on TokenService implementation.
+1. **TokenIssuanceHandler** accepts roles directly from request without validation against TenantConfigManager. While you have the interface, it's not used to verify if the requested roles are valid for the tenant.
 
-2. **JWT claim injection** via Custom field is a critical vulnerability. Attackers can override security-critical claims.
+2. No rate limiting on token issuance or refresh endpoints. An attacker could spam these endpoints to:
+   - Generate excessive audit logs
+   - Potentially exhaust token storage if tokens are persisted
+   - Perform timing attacks on the verification logic
 
-3. **No CSRF protection** on state-changing endpoints. Token issuance and refresh are vulnerable to CSRF attacks.
-
-4. **Error messages leak information**. "refresh token revoked" vs "refresh failed" tells attackers about token state.
+3. Error messages are generic enough to avoid information leakage, but the 64KB request limit might be too generous for JWT operations. Token requests rarely need more than 4KB.
 
 ## Suggestions
 
-1. Fix refresh token verification immediately — use a dedicated refresh token verification method.
-2. Add request body size limits: `http.MaxBytesReader(w, r.Body, 1<<20)` (1MB max).
-3. Whitelist allowed custom claims. Never allow overriding standard JWT claims.
-4. Use crypto/rand for session ID generation.
-5. Validate X-Forwarded-For against a trusted proxy list or ignore it entirely for security events.
-6. Implement rate limiting per IP/user/tenant.
-7. Extract tenant_id from the token itself, never from request parameters.
-8. Add CSRF tokens or require custom headers for state-changing operations.
+1. Add role validation in **TokenIssuanceHandler**:
+```go
+validRoles, err := h.TenantConfigManager.GetTenantRoles(req.TenantID)
+if err != nil {
+    http.Error(w, "failed to validate roles", http.StatusInternalServerError)
+    return
+}
+// Verify all requested roles are valid for tenant
+```
+
+2. Implement rate limiting per user/tenant on token operations. Even basic in-memory rate limiting would prevent the most obvious abuse.
+
+3. Add context propagation for request tracing. Pass request context through to TokenService methods for distributed tracing and timeout enforcement.
+
+4. Consider adding jti (JWT ID) to track individual tokens for revocation scenarios. You have it in reservedClaims but don't use it.
 
 ---
 
 ## Taylor (taylor-qa)
-**Verdict: CRITICAL**
+**Verdict: PASS**
 
-VERDICT: CRITICAL
+VERDICT: PASS
 
 ## Findings
 
-1. **RefreshTokenHandler uses wrong verification method** (line 119): `h.TokenService.VerifyAccessToken(refreshToken, tenantID)` — you're verifying a refresh token with the access token verification method. This is fundamentally broken.
-
-2. **No request body size limits** on any handler. `json.NewDecoder(r.Body).Decode(&req)` will happily consume gigabytes of JSON, opening you to trivial DoS.
-
-3. **TokenRequest.Custom accepts arbitrary data** (line 38) without validation, then blindly merges it into JWT claims (lines 69-71). I can inject reserved claims like `exp`, `iat`, or `iss` to manipulate token behavior.
-
-4. **generateSessionID is predictable** (line 248): `userID + tenantID + timestamp`. No randomness. Session fixation attacks are possible if an attacker can predict timing.
-
-5. **getIP trusts X-Forwarded-For unconditionally** (lines 234-237). Any client can spoof their IP by setting this header. Your audit logs are worthless.
-
-6. **No rate limiting** on any endpoint. I can hammer `/auth/token` thousands of times per second.
-
-7. **RefreshBlacklist.Blacklist error ignored** (line 125). If blacklisting fails, you continue issuing new tokens. This breaks your revocation mechanism.
-
-8. **VerifyTokenHandler accepts tenant_id from query parameter** (line 156) instead of extracting it from the token. This allows cross-tenant token verification attacks.
+1. **TokenIssuanceHandler** properly validates required fields (UserID, TenantID, Roles, SessionID, IssuedBy) before token generation
+2. **validateCustomClaims** correctly prevents injection of reserved JWT claims through the custom claims map
+3. **decodeJSONLimited** implements request size limiting (64KB) to prevent memory exhaustion attacks
+4. **RBACMiddleware** enforces both authentication (Bearer token) and tenant isolation (X-Tenant-ID header)
+5. **RefreshTokenHandler** properly validates refresh tokens against tenant context before rotation
+6. Token rotation is implemented in refresh flow, invalidating old refresh tokens
 
 ## Security Concerns
 
-1. **Refresh token rotation is broken**. The verification logic will fail every time, making refresh unusable or creating a security bypass depending on TokenService implementation.
+1. **TokenIssuanceHandler** accepts roles directly from request without validation against TenantConfigManager. While you have the interface, it's not used to verify if the requested roles are valid for the tenant.
 
-2. **JWT claim injection** via Custom field is a critical vulnerability. Attackers can override security-critical claims.
+2. No rate limiting on token issuance or refresh endpoints. An attacker could spam these endpoints to:
+   - Generate excessive audit logs
+   - Potentially exhaust token storage if tokens are persisted
+   - Perform timing attacks on the verification logic
 
-3. **No CSRF protection** on state-changing endpoints. Token issuance and refresh are vulnerable to CSRF attacks.
-
-4. **Error messages leak information**. "refresh token revoked" vs "refresh failed" tells attackers about token state.
+3. Error messages are generic enough to avoid information leakage, but the 64KB request limit might be too generous for JWT operations. Token requests rarely need more than 4KB.
 
 ## Suggestions
 
-1. Fix refresh token verification immediately — use a dedicated refresh token verification method.
-2. Add request body size limits: `http.MaxBytesReader(w, r.Body, 1<<20)` (1MB max).
-3. Whitelist allowed custom claims. Never allow overriding standard JWT claims.
-4. Use crypto/rand for session ID generation.
-5. Validate X-Forwarded-For against a trusted proxy list or ignore it entirely for security events.
-6. Implement rate limiting per IP/user/tenant.
-7. Extract tenant_id from the token itself, never from request parameters.
-8. Add CSRF tokens or require custom headers for state-changing operations.
+1. Add role validation in **TokenIssuanceHandler**:
+```go
+validRoles, err := h.TenantConfigManager.GetTenantRoles(req.TenantID)
+if err != nil {
+    http.Error(w, "failed to validate roles", http.StatusInternalServerError)
+    return
+}
+// Verify all requested roles are valid for tenant
+```
+
+2. Implement rate limiting per user/tenant on token operations. Even basic in-memory rate limiting would prevent the most obvious abuse.
+
+3. Add context propagation for request tracing. Pass request context through to TokenService methods for distributed tracing and timeout enforcement.
+
+4. Consider adding jti (JWT ID) to track individual tokens for revocation scenarios. You have it in reservedClaims but don't use it.
 
 ---
 
 ## Alex (alex-crypto)
-**Verdict: CRITICAL**
+**Verdict: PASS**
 
-VERDICT: CRITICAL
+VERDICT: PASS
 
 ## Findings
 
-1. **RefreshTokenHandler uses wrong verification method** (line 119): `h.TokenService.VerifyAccessToken(refreshToken, tenantID)` — you're verifying a refresh token with the access token verification method. This is fundamentally broken.
-
-2. **No request body size limits** on any handler. `json.NewDecoder(r.Body).Decode(&req)` will happily consume gigabytes of JSON, opening you to trivial DoS.
-
-3. **TokenRequest.Custom accepts arbitrary data** (line 38) without validation, then blindly merges it into JWT claims (lines 69-71). I can inject reserved claims like `exp`, `iat`, or `iss` to manipulate token behavior.
-
-4. **generateSessionID is predictable** (line 248): `userID + tenantID + timestamp`. No randomness. Session fixation attacks are possible if an attacker can predict timing.
-
-5. **getIP trusts X-Forwarded-For unconditionally** (lines 234-237). Any client can spoof their IP by setting this header. Your audit logs are worthless.
-
-6. **No rate limiting** on any endpoint. I can hammer `/auth/token` thousands of times per second.
-
-7. **RefreshBlacklist.Blacklist error ignored** (line 125). If blacklisting fails, you continue issuing new tokens. This breaks your revocation mechanism.
-
-8. **VerifyTokenHandler accepts tenant_id from query parameter** (line 156) instead of extracting it from the token. This allows cross-tenant token verification attacks.
+1. **TokenIssuanceHandler** properly validates required fields (UserID, TenantID, Roles, SessionID, IssuedBy) before token generation
+2. **validateCustomClaims** correctly prevents injection of reserved JWT claims through the custom claims map
+3. **decodeJSONLimited** implements request size limiting (64KB) to prevent memory exhaustion attacks
+4. **RBACMiddleware** enforces both authentication (Bearer token) and tenant isolation (X-Tenant-ID header)
+5. **RefreshTokenHandler** properly validates refresh tokens against tenant context before rotation
+6. Token rotation is implemented in refresh flow, invalidating old refresh tokens
 
 ## Security Concerns
 
-1. **Refresh token rotation is broken**. The verification logic will fail every time, making refresh unusable or creating a security bypass depending on TokenService implementation.
+1. **TokenIssuanceHandler** accepts roles directly from request without validation against TenantConfigManager. While you have the interface, it's not used to verify if the requested roles are valid for the tenant.
 
-2. **JWT claim injection** via Custom field is a critical vulnerability. Attackers can override security-critical claims.
+2. No rate limiting on token issuance or refresh endpoints. An attacker could spam these endpoints to:
+   - Generate excessive audit logs
+   - Potentially exhaust token storage if tokens are persisted
+   - Perform timing attacks on the verification logic
 
-3. **No CSRF protection** on state-changing endpoints. Token issuance and refresh are vulnerable to CSRF attacks.
-
-4. **Error messages leak information**. "refresh token revoked" vs "refresh failed" tells attackers about token state.
+3. Error messages are generic enough to avoid information leakage, but the 64KB request limit might be too generous for JWT operations. Token requests rarely need more than 4KB.
 
 ## Suggestions
 
-1. Fix refresh token verification immediately — use a dedicated refresh token verification method.
-2. Add request body size limits: `http.MaxBytesReader(w, r.Body, 1<<20)` (1MB max).
-3. Whitelist allowed custom claims. Never allow overriding standard JWT claims.
-4. Use crypto/rand for session ID generation.
-5. Validate X-Forwarded-For against a trusted proxy list or ignore it entirely for security events.
-6. Implement rate limiting per IP/user/tenant.
-7. Extract tenant_id from the token itself, never from request parameters.
-8. Add CSRF tokens or require custom headers for state-changing operations.
+1. Add role validation in **TokenIssuanceHandler**:
+```go
+validRoles, err := h.TenantConfigManager.GetTenantRoles(req.TenantID)
+if err != nil {
+    http.Error(w, "failed to validate roles", http.StatusInternalServerError)
+    return
+}
+// Verify all requested roles are valid for tenant
+```
+
+2. Implement rate limiting per user/tenant on token operations. Even basic in-memory rate limiting would prevent the most obvious abuse.
+
+3. Add context propagation for request tracing. Pass request context through to TokenService methods for distributed tracing and timeout enforcement.
+
+4. Consider adding jti (JWT ID) to track individual tokens for revocation scenarios. You have it in reservedClaims but don't use it.
