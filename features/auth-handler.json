@@ -3,11 +3,14 @@
   "title": "JWT Authentication Handler",
   "description": "Issue and verify JWTs for multi-tenant access. ECDSA P-256 signing, RBAC with MSP/security/compliance roles, short-lived access tokens, refresh rotation.",
   "implementAgent": "jordan-auth",
-  "currentPhase": "design",
+  "currentPhase": "implement",
   "status": "active",
   "artifacts": {
     "spec": [
       "docs/specs/auth-handler.md"
+    ],
+    "design": [
+      "docs/design/auth-handler.md"
     ]
   },
   "reviewResults": [],
