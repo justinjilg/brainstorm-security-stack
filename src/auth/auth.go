@@ -1,13 +1,16 @@
 package auth
 
 import (
-	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"crypto/ecdsa"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"example.com/project/audit"
 	"example.com/project/keymanager"
@@ -18,13 +21,13 @@ import (
 
 // Handler encapsulates dependencies for JWT authentication endpoints.
 type Handler struct {
-	TokenService     token.TokenService
-	RBACService      rbac.RBACService
-	KeyManager       keymanager.KeyManager
-	AuditLogger      audit.AuditLogger
-	TenantConfig     tenantconfig.TenantConfigManager
-	TokenConfig      token.TokenConfig
-	RefreshBlacklist RefreshTokenBlacklist
+	TokenService      token.TokenService
+	RBACService       rbac.RBACService
+	KeyManager        keymanager.KeyManager
+	AuditLogger       audit.AuditLogger
+	TenantConfig      tenantconfig.TenantConfigManager
+	TokenConfig       token.TokenConfig
+	RefreshBlacklist  RefreshTokenBlacklist
 }
 
 // RefreshTokenBlacklist provides refresh token revocation.
@@ -35,11 +38,11 @@ type RefreshTokenBlacklist interface {
 
 // TokenRequest represents a login or token refresh request.
 type TokenRequest struct {
-	UserID       string                 `json:"user_id"`
-	TenantID     string                 `json:"tenant_id"`
-	Roles        []string               `json:"roles"`
-	Custom       map[string]interface{} `json:"custom,omitempty"`
-	RefreshToken string                 `json:"refresh_token,omitempty"`
+	UserID      string                 `json:"user_id"`
+	TenantID    string                 `json:"tenant_id"`
+	Roles       []string               `json:"roles"`
+	Custom      map[string]interface{} `json:"custom,omitempty"`
+	RefreshToken string                `json:"refresh_token,omitempty"`
 }
 
 // TokenResponse represents a JWT issuance or refresh response.
@@ -275,18 +278,42 @@ func generateSessionID(userID, tenantID string, now int64) string {
 	return strings.Join([]string{userID, tenantID, time.Unix(now, 0).Format(time.RFC3339Nano)}, "-")
 }
 
-// signJWT signs claims with ECDSA P-256 using the token package's internal signer.
+// --- Example ECDSA JWT signing for completeness (not used directly in handler) ---
+
+// signJWT signs claims with ECDSA P-256 for demonstration.
 func signJWT(claims token.Claims, priv *ecdsa.PrivateKey) (string, error) {
-	if priv == nil {
-		return "", errors.New("nil private key")
-	}
-	return token.SignClaims(claims, priv)
+	tokenObj := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
+		"user_id":    claims.UserID,
+		"tenant_id":  claims.TenantID,
+		"roles":      claims.Roles,
+		"session_id": claims.SessionID,
+		"issued_by":  claims.IssuedBy,
+		"custom":     claims.Custom,
+		"exp":        claims.Exp,
+		"iat":        claims.Iat,
+		"aud":        claims.Aud,
+		"iss":        claims.Iss,
+	})
+	return tokenObj.SignedString(priv)
 }
 
-// verifyJWT verifies a JWT with ECDSA P-256 using the token package's internal verifier.
+// verifyJWT verifies a JWT with ECDSA P-256 for demonstration.
 func verifyJWT(tokenString string, pub *ecdsa.PublicKey) (*token.Claims, error) {
-	if pub == nil {
-		return nil, errors.New("nil public key")
+	tokenObj, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if token.Method != jwt.SigningMethodES256 {
+			return nil, errors.New("unexpected signing method")
+		}
+		return pub, nil
+	})
+	if err != nil || !tokenObj.Valid {
+		return nil, errors.New("invalid token")
 	}
-	return token.VerifyClaims(tokenString, pub)
+	claimsMap, ok := tokenObj.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid claims")
+	}
+	claims := &token.Claims{}
+	b, _ := json.Marshal(claimsMap)
+	json.Unmarshal(b, claims)
+	return claims, nil
 }
