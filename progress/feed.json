@@ -995,6 +995,20 @@
       "route_reason": "thompson-sampling",
       "quality_score": "0.84",
       "latency_ms": 3911
+    },
+    {
+      "timestamp": "2026-03-30T20:20:22.118Z",
+      "agent": "quinn-architect",
+      "feature": "aws-scanner",
+      "phase": "design",
+      "status": "completed",
+      "summary": "Design complete: AWS Resource Scanner. Pending security/risk review.",
+      "artifact": "docs/design/aws-scanner.md",
+      "cost": "$0.0000",
+      "model": "gpt-4.1-2025-04-14",
+      "route_reason": "semantic-cache",
+      "quality_score": "0.75",
+      "latency_ms": 462
     }
   ]
 }
