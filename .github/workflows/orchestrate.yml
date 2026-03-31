@@ -1,0 +1,57 @@
+name: Living Case Study — Orchestrate
+
+on:
+  schedule:
+    # Every 4 hours
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      feature:
+        description: 'Feature to run (blank = next pending)'
+        required: false
+        type: string
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install dependencies
+        run: npm install --no-package-lock 2>/dev/null || true
+
+      - name: Run orchestrator
+        env:
+          BR_ADMIN_KEY: ${{ secrets.BR_ADMIN_KEY }}
+          REVALIDATION_SECRET: ${{ secrets.REVALIDATION_SECRET }}
+          FEATURE: ${{ inputs.feature }}
+        run: |
+          if [ -n "$FEATURE" ]; then
+            npx tsx scripts/orchestrate.ts --feature "$FEATURE"
+          else
+            npx tsx scripts/orchestrate.ts next
+          fi
+
+      - name: Commit and push artifacts
+        run: |
+          git config user.name "Living Case Study Bot"
+          git config user.email "bot@brainstorm.co"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "feat: autonomous build — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi

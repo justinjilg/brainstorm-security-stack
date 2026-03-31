@@ -60,22 +60,22 @@ type AgentConfig = { id: string; displayName: string; role: string; model: strin
 // ── Agent Registry ──────────────────────────────────────────────────
 
 const AGENTS: Record<string, AgentConfig> = {
-  "quinn-architect":  { id: "quinn-architect",  displayName: "Quinn",  role: "Architect",       model: "openclaw/auto", soulPath: "agents/quinn/SOUL.md" },
-  "sage-pm":          { id: "sage-pm",          displayName: "Sage",   role: "Product Manager", model: "openclaw/auto", soulPath: "agents/sage/SOUL.md" },
-  "casey-apisec":     { id: "casey-apisec",     displayName: "Casey",  role: "API Security",    model: "openclaw/auto", soulPath: "agents/casey/SOUL.md" },
-  "alex-crypto":      { id: "alex-crypto",      displayName: "Alex",   role: "Crypto Engineer", model: "openclaw/auto", soulPath: "agents/alex/SOUL.md" },
-  "jordan-auth":      { id: "jordan-auth",      displayName: "Jordan", role: "Auth Architect",  model: "openclaw/auto", soulPath: "agents/jordan/SOUL.md" },
-  "river-risk":       { id: "river-risk",       displayName: "River",  role: "Risk Analyst",    model: "openclaw/auto", soulPath: "agents/river/SOUL.md" },
-  "sam-compliance":   { id: "sam-compliance",    displayName: "Sam",    role: "Compliance",      model: "openclaw/auto", soulPath: "agents/sam/SOUL.md" },
-  "morgan-devops":    { id: "morgan-devops",     displayName: "Morgan", role: "DevOps",          model: "openclaw/auto", soulPath: "agents/morgan/SOUL.md" },
-  "taylor-qa":        { id: "taylor-qa",         displayName: "Taylor", role: "QA Engineer",     model: "openclaw/auto", soulPath: "agents/taylor/SOUL.md" },
-  "avery-frontend":   { id: "avery-frontend",    displayName: "Avery",  role: "Frontend",        model: "openclaw/auto", soulPath: "agents/avery/SOUL.md" },
+  "quinn-architect":  { id: "quinn-architect",  displayName: "Quinn",  role: "Architect",       model: "moonshot/kimi-k2.5", soulPath: "agents/quinn/SOUL.md" },
+  "sage-pm":          { id: "sage-pm",          displayName: "Sage",   role: "Product Manager", model: "moonshot/kimi-k2.5", soulPath: "agents/sage/SOUL.md" },
+  "casey-apisec":     { id: "casey-apisec",     displayName: "Casey",  role: "API Security",    model: "moonshot/kimi-k2.5", soulPath: "agents/casey/SOUL.md" },
+  "alex-crypto":      { id: "alex-crypto",      displayName: "Alex",   role: "Crypto Engineer", model: "moonshot/kimi-k2.5", soulPath: "agents/alex/SOUL.md" },
+  "jordan-auth":      { id: "jordan-auth",      displayName: "Jordan", role: "Auth Architect",  model: "moonshot/kimi-k2.5", soulPath: "agents/jordan/SOUL.md" },
+  "river-risk":       { id: "river-risk",       displayName: "River",  role: "Risk Analyst",    model: "moonshot/kimi-k2.5", soulPath: "agents/river/SOUL.md" },
+  "sam-compliance":   { id: "sam-compliance",    displayName: "Sam",    role: "Compliance",      model: "moonshot/kimi-k2.5", soulPath: "agents/sam/SOUL.md" },
+  "morgan-devops":    { id: "morgan-devops",     displayName: "Morgan", role: "DevOps",          model: "moonshot/kimi-k2.5", soulPath: "agents/morgan/SOUL.md" },
+  "taylor-qa":        { id: "taylor-qa",         displayName: "Taylor", role: "QA Engineer",     model: "moonshot/kimi-k2.5", soulPath: "agents/taylor/SOUL.md" },
+  "avery-frontend":   { id: "avery-frontend",    displayName: "Avery",  role: "Frontend",        model: "moonshot/kimi-k2.5", soulPath: "agents/avery/SOUL.md" },
 };
 
 // ── BR API ──────────────────────────────────────────────────────────
 
 const FALLBACKS: Record<string, string[]> = {
-  "openclaw/auto": ["anthropic/claude-sonnet-4-6", "openai/gpt-4.1", "google/gemini-2.5-pro", "google/gemini-2.5-flash"],
+  "moonshot/kimi-k2.5": ["google/gemini-2.5-flash", "openai/gpt-4.1", "google/gemini-2.5-pro"],
 };
 
 async function getJwt(agentId: string): Promise<string> {
