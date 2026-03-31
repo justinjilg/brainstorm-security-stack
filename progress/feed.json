@@ -1239,6 +1239,20 @@
       "route_reason": "prompt-cache",
       "quality_score": "1.00",
       "latency_ms": 0
+    },
+    {
+      "timestamp": "2026-03-31T04:56:25.072Z",
+      "agent": "sam-compliance",
+      "feature": "policy-engine",
+      "phase": "compliance",
+      "status": "completed",
+      "summary": "Compliance mapped: Policy Evaluation Engine",
+      "artifact": "docs/compliance/policy-engine-evidence.md",
+      "cost": "$0.0133",
+      "model": "gemini-2.5-flash",
+      "route_reason": "explicit",
+      "quality_score": "0.61",
+      "latency_ms": 17907
     }
   ]
 }
