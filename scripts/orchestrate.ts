@@ -163,8 +163,13 @@ function appendFeed(entry: Record<string, unknown>) {
 }
 
 function gitPush(msg: string, files: string[]) {
+  // Ensure git identity is configured (needed in CI environments)
+  try { execFileSync("git", ["config", "user.name"], { cwd: ROOT, stdio: "pipe" }); } catch {
+    execFileSync("git", ["config", "user.name", "Living Case Study Bot"], { cwd: ROOT, stdio: "pipe" });
+    execFileSync("git", ["config", "user.email", "bot@brainstorm.co"], { cwd: ROOT, stdio: "pipe" });
+  }
   for (const f of files) execFileSync("git", ["add", f], { cwd: ROOT, stdio: "pipe" });
-  execFileSync("git", ["commit", "-m", `${msg}\n\nCo-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`], { cwd: ROOT, stdio: "pipe" });
+  execFileSync("git", ["commit", "-m", `${msg}\n\nCo-Authored-By: Living Case Study Agents <bot@brainstorm.co>`], { cwd: ROOT, stdio: "pipe" });
   execFileSync("git", ["push", "origin", "main"], { cwd: ROOT, stdio: "pipe" });
   // Revalidate live page
   const secret = process.env.REVALIDATION_SECRET;
