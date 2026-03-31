@@ -1253,6 +1253,36 @@
       "route_reason": "explicit",
       "quality_score": "0.61",
       "latency_ms": 17907
+    },
+    {
+      "timestamp": "2026-03-31T08:33:54.844Z",
+      "agent": "morgan-devops",
+      "feature": "policy-engine",
+      "phase": "integrate",
+      "status": "completed",
+      "summary": "Integration: infra/ci/policy-engine.yaml",
+      "artifact": "infra/ci/policy-engine.yaml",
+      "format": "yaml",
+      "cost": "$0.0094",
+      "model": "gemini-2.5-flash",
+      "route_reason": "explicit",
+      "quality_score": "0.84",
+      "latency_ms": 8877
+    },
+    {
+      "timestamp": "2026-03-31T08:34:12.206Z",
+      "agent": "avery-frontend",
+      "feature": "policy-engine",
+      "phase": "integrate",
+      "status": "completed",
+      "summary": "Integration: frontend/components/FindingsTable.tsx",
+      "artifact": "frontend/components/FindingsTable.tsx",
+      "format": "raw-code",
+      "cost": "$0.0418",
+      "model": "gemini-2.5-flash",
+      "route_reason": "explicit",
+      "quality_score": "0.77",
+      "latency_ms": 15230
     }
   ]
 }

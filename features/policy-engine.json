@@ -4,7 +4,7 @@
   "description": "Evaluate discovered assets against YAML-defined security rules. Map findings to CIS/SOC2/HIPAA controls. Deduplicate via pgvector embeddings.",
   "implementAgent": "quinn-architect",
   "currentPhase": "integrate",
-  "status": "active",
+  "status": "completed",
   "artifacts": {
     "spec": [
       "docs/specs/policy-engine.md"
@@ -25,6 +25,10 @@
     ],
     "compliance": [
       "docs/compliance/policy-engine-evidence.md"
+    ],
+    "integrate": [
+      "infra/ci/policy-engine.yaml",
+      "frontend/components/FindingsTable.tsx"
     ]
   },
   "reviewResults": [
